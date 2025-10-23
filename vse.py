@@ -90,8 +90,23 @@ class CsvBatch:
             dw = csv.DictWriter(myFile, keys, restval = "NA")
             dw.writeheader()
             for r in self.rows:
-                dw.writerow(r)
+                dw.
+                writerow(r)
 
+    return baseName + str(i) + ".csv"
+
+    def run(self):
+        """
+        Execute the simulations and return a list of row dictionaries.
+        """
+        return self.rows
+
+    def to_dataframe(self):
+        """
+        Convenience wrapper: return simulation results as a pandas DataFrame.
+        """
+        import pandas as pd
+        return pd.DataFrame(self.rows)
 
 
 medianRuns = [
