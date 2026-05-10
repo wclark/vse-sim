@@ -43,6 +43,30 @@ jobs:
         run: |
           pipenv run coverage
 
+      - name: Build package distributions
+        run: |
+          python -m pip install --upgrade build
+          python -m build
+
+      - name: Install package in clean environment
+        run: |
+          python -m venv /tmp/vse-sim-package
+          /tmp/vse-sim-package/bin/python -m pip install --upgrade pip
+          /tmp/vse-sim-package/bin/python -m pip install dist/*.whl
+          cd /tmp
+          /tmp/vse-sim-package/bin/python - <<'PY'
+          from debugDump import setDebug
+          from vse import CsvBatch as LegacyCsvBatch
+          from voterModels import PolyaModel as LegacyPolyaModel
+          from vse_sim import CsvBatch, Mav, PolyaModel, Score, baseRuns, medianRuns
+
+          setDebug(False)
+          assert CsvBatch is LegacyCsvBatch
+          assert PolyaModel is LegacyPolyaModel
+          assert len(CsvBatch(PolyaModel(), [[Score(), baseRuns], [Mav(), medianRuns]], 5, 4, 3).rows) == 60
+          print("package import smoke test passed")
+          PY
+
       - name: Write coverage summary
         if: always()
         run: |
@@ -73,5 +97,14 @@ jobs:
           path: |
             coverage.xml
             pytest-results.xml
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload package distributions
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: package-distributions
+          path: dist/
           if-no-files-found: ignore
           retention-days: 14

@@ -2,8 +2,12 @@
 branch = True
 source = .
 omit =
+    .package-smoke/*
     .venv/*
+    build/*
+    dist/*
     docs/*
+    *.egg-info/*
     test/*
     tests.py
 
