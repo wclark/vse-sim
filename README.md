@@ -9,6 +9,21 @@ See [Voter Satisfaction Efficiency FAQ](http://electionscience.github.io/vse-sim
 
 Requirements: Python 3.10+, NumPy, SciPy.
 
+For notebook and library-style usage, install the package into the active
+environment:
+
+    python -m pip install .
+
+That exposes the modern `vse_sim` package namespace:
+
+    from vse_sim import CsvBatch, Mav, PolyaModel, Score, baseRuns, medianRuns
+
+The legacy top-level modules remain installed and importable for existing
+scripts and examples:
+
+    from vse import CsvBatch
+    from voterModels import PolyaModel
+
 Testing uses doctests, which should make most things pretty self-documenting.
 
 E.g.:
@@ -36,6 +51,9 @@ To run lint and style checks locally:
 The GitHub Actions workflow runs the same coverage check on pushes, pull requests,
 and manual dispatches. It uploads the HTML coverage report plus machine-readable
 coverage and JUnit XML files as workflow artifacts.
+
+The same workflow also builds the wheel and source distribution, installs the
+wheel into a clean environment, and uploads the package artifacts.
 
 The `Lint and Style` workflow runs Ruff formatting and lint checks on pushes,
 pull requests, and manual dispatches. To enforce it before merge, mark the
@@ -68,3 +86,7 @@ The root directory keeps the importable Python modules and common entry points s
 older examples and direct imports keep working. Reference output snapshots live
 in `data/`, brochure artwork lives in `assets/`, and the R validation script
 lives in `scripts/`.
+
+New code should prefer the `vse_sim` package namespace. The root-level modules
+are kept for backward compatibility and as a useful regression target during the
+packaging migration.

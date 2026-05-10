@@ -4,10 +4,14 @@ __pycache__
 .pytest_cache/
 .ruff_cache/
 .venv/
+.package-smoke/
 .coverage
 coverage.xml
 htmlcov/
 pytest-results.xml
+build/
+dist/
+*.egg-info/
 .project
 .pydevproject
 *.csv
