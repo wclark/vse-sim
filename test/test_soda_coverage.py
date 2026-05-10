@@ -101,7 +101,7 @@ def test_election_counts_debug_and_array_approval_paths(monkeypatch):
         [[0, 1], [1, 0]],
         [],
     )
-    assert type(array_approval.appr) is sodaTest.arrayType
+    assert isinstance(array_approval.appr, np.ndarray)
 
     monkeypatch.setattr(sodaTest, "DEBUG", False)
     unchecked = ElectionCounts(
@@ -121,7 +121,7 @@ def test_beaters_rival_updates_private_removal_and_default_growth():
         [[0, 1, 2], [1, 2, 0], [2, 0, 1]],
         [],
     )
-    election.matrix = np.matrix([[0, 0, 10], [1, 0, 0], [5, 7, 0]])
+    election.matrix = np.array([[0, 0, 10], [1, 0, 0], [5, 7, 0]])
 
     candidates = [1]
     rival = [(0,)]
@@ -278,7 +278,7 @@ def test_module_level_random_helpers(monkeypatch, capsys):
         delg=[1],
         appr=[0],
         prefs=[[0]],
-        matrix=np.matrix([[0]]),
+        matrix=np.array([[0]]),
         majSmith={"inside"},
         winner=lambda: "outside",
     )

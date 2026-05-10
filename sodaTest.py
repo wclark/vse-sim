@@ -9,7 +9,7 @@ import numpy as np
 def autoargs(*include, **kwargs):
     def _autoargs(func):
         spec = inspect.getfullargspec(func)
-        attrs, varargs, varkw, defaults = (
+        attrs, varargs, _varkw, defaults = (
             spec.args,
             spec.varargs,
             spec.varkw,
@@ -25,12 +25,12 @@ def autoargs(*include, **kwargs):
         def wrapper(self, *args, **kwargs):
             # handle default values
             if defaults:
-                for attr, val in zip(reversed(attrs), reversed(defaults)):
+                for attr, val in zip(reversed(attrs), reversed(defaults), strict=False):
                     if sieve(attr):
                         setattr(self, attr, val)
             # handle positional arguments
             positional_attrs = attrs[1:]
-            for attr, val in zip(positional_attrs, args):
+            for attr, val in zip(positional_attrs, args, strict=False):
                 if sieve(attr):
                     setattr(self, attr, val)
             # handle varargs
@@ -51,7 +51,7 @@ def autoargs(*include, **kwargs):
 
 
 # Hah: http://www.pydanny.com/cached-property.html
-class cached_property(object):
+class cached_property:
     """A property that is only computed once per instance and then replaces
     itself with an ordinary attribute. Deleting the attribute resets the
     property.
@@ -60,7 +60,7 @@ class cached_property(object):
     """
 
     def __init__(self, func):
-        self.__doc__ = getattr(func, "__doc__")
+        self.__doc__ = func.__doc__
         self.func = func
 
     def __get__(self, obj, cls):
@@ -70,9 +70,8 @@ class cached_property(object):
         return value
 
 
-##actual code
+# Actual code.
 DEBUG = True
-arrayType = type(np.array([1]))
 
 
 class ElectionCounts:
@@ -87,8 +86,7 @@ class ElectionCounts:
         if self.cantWin is None:
             self.cantWin = set()
         self.n = len(delg)
-        if type(self.appr) != arrayType:
-            self.appr = np.matrix(self.appr)
+        self.appr = np.asarray(self.appr).reshape(-1)
         if DEBUG:
             n = self.n
             assert self.appr.size == n
@@ -104,7 +102,7 @@ class ElectionCounts:
                 assert delg[i] == 0
 
     def __repr__(self):
-        return f"ElectionCounts({self.delg},{self.appr.tolist()[0]},{self.prefs},{self.order})"
+        return f"ElectionCounts({self.delg},{self.appr.tolist()},{self.prefs},{self.order})"
 
     def oneMatrix(self, pref, size=1):
         n = self.n
@@ -121,7 +119,7 @@ class ElectionCounts:
         n = self.n
         if appr is None:
             appr = self.appr
-        return np.matrix(np.ones((n, 1))) * appr
+        return np.ones((n, 1)) * np.asarray(appr).reshape(1, n)
 
     @cached_property
     def matrix(self):
@@ -131,7 +129,7 @@ class ElectionCounts:
         return mat
 
     def beaters(self, loser, candidates, minwin=None, rival=None, private=False):
-        """a generator which, using the matrix m, gives any members of candidates who loser doesn't majority beat.
+        """Generate candidates that `loser` does not majority beat.
 
         NOTE: THIS MODIFIES candidates AS A SIDE-EFFECT, AND NOTICES IF IT"S MODIFIED BY OTHERS.
         Also modifies `by` as a side effect
@@ -210,17 +208,15 @@ class ElectionCounts:
 
     def delegated(self, amounts, cantWin=None):
         delegator = self.order[0]
-        appr = np.matrix(np.zeros(self.n))
+        appr = np.zeros(self.n)
         dprefs = self.prefs[delegator]
         # print(dprefs)
-        appr[:, dprefs] = amounts
+        appr[dprefs] = amounts
         if DEBUG:
             for i in range(self.n - 1):
-                assert appr[0, dprefs[i]] >= appr[0, dprefs[i + 1]], "bullshit %i %i %s ... %s" % (
-                    appr[0, dprefs[i]],
-                    appr[0, dprefs[i + 1]],
-                    appr,
-                    dprefs,
+                assert appr[dprefs[i]] >= appr[dprefs[i + 1]], (
+                    f"approval order {appr[dprefs[i]]:g} {appr[dprefs[i + 1]]:g} "
+                    f"{appr} ... {dprefs}"
                 )
 
         # print(appr)
@@ -261,7 +257,8 @@ class ElectionCounts:
                 # print("badwinners", smith, self.cantWin)
                 if verbose > 2:
                     print("giving up", self.matrix)
-                return None  # This is a shortcut. We don't know that this cand will win, but it will be ignored anyway.
+                # Shortcut: we do not know this candidate will win, but it will be ignored.
+                return None
 
         # figure out reasonable bounds for whom to approve, who might win.
         idealWinnerIndex = bestHopeIndex = self.n
@@ -323,8 +320,8 @@ class ElectionCounts:
                     print()
                 bestHopeIndex = i
                 bestHope = w
-                for l in range(i + 1, self.n):
-                    cantWin.add(curPrefs[l])
+                for loser_index in range(i + 1, self.n):
+                    cantWin.add(curPrefs[loser_index])
         return bestHope
 
     def possibleDelegations(self, worstWinnerIndex, idealWinnerIndex):
@@ -332,11 +329,12 @@ class ElectionCounts:
         curPrefs = self.prefs[self.order[0]]
         size = self.delg[self.order[0]]
         delegations = np.zeros(self.n)
-        for i in range(max(1, idealWinnerIndex + 1)):
+        threshold_count = max(1, idealWinnerIndex + 1)
+        for i in range(threshold_count):
             delegations[i] = size
         dcopy = np.array(delegations)
         # print("hi",i,worstWinnerIndex + 1)
-        for i in range(i, worstWinnerIndex + 1):
+        for i in range(threshold_count - 1, worstWinnerIndex + 1):
             delegations[i] = size
             yield np.array(delegations)
             # print("there")
@@ -353,12 +351,7 @@ class ElectionCounts:
                     min(
                         size,
                         self.minWin[0]
-                        - (
-                            max(self.matrix[:, curPrefs[i]][range(i + 1, worstWinnerIndex + 1), :])[
-                                0, 0
-                            ]
-                            - size
-                        )
+                        - (max(self.matrix[range(i + 1, worstWinnerIndex + 1), curPrefs[i]]) - size)
                         + 0.1,
                     ),
                 )
@@ -376,7 +369,7 @@ class ElectionCounts:
                     self.n - j - 1
                 )
         for j in range(self.n):
-            scores[j] = scores[j] + self.appr.tolist()[0][j] * self.n - 1
+            scores[j] = scores[j] + self.appr[j] * self.n - 1
         return scores
 
 
@@ -404,9 +397,9 @@ myEc3 = ElectionCounts(
 
 
 def shuffled(n):
-    l = list(range(n))
-    random.shuffle(l)
-    return l
+    values = list(range(n))
+    random.shuffle(values)
+    return values
 
 
 def randomElection(ncand):
