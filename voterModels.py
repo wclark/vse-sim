@@ -177,6 +177,7 @@ class QModel(RandomModel):
     Useful along with ReverseModel to create a poor-man's 2d model.
 
     Basic structure
+        >>> random.seed(0)
         >>> e4 = QModel(sqrt(3), RandomModel())(100,1)
         >>> len(e4)
         100
