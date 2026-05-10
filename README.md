@@ -61,3 +61,10 @@ Try
     >>> csvs.saveFile()
 
 and look for the results in `SimResults1.csv`
+
+## Repository layout
+
+The root directory keeps the importable Python modules and common entry points so
+older examples and direct imports keep working. Reference output snapshots live
+in `data/`, brochure artwork lives in `assets/`, and the R validation script
+lives in `scripts/`.

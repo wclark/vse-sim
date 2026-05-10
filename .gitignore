@@ -2,11 +2,13 @@
 python3
 __pycache__
 .pytest_cache/
+.ruff_cache/
 .venv/
 .coverage
 coverage.xml
 htmlcov/
 pytest-results.xml
+.project
 .pydevproject
 *.csv
 *.rtf
