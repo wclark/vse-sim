@@ -84,8 +84,7 @@ and look for the results in `SimResults1.csv`
 
 The root directory keeps the importable Python modules and common entry points so
 older examples and direct imports keep working. Reference output snapshots live
-in `data/`, brochure artwork lives in `assets/`, and the R validation script
-lives in `scripts/`.
+in `data/`, and the R validation script lives in `scripts/`.
 
 New code should prefer the `vse_sim` package namespace. The root-level modules
 are kept for backward compatibility and as a useful regression target during the
