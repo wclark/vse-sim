@@ -104,7 +104,7 @@ class Method:
     def __str__(self):
         return self.__class__.__name__
 
-    def results(self, ballots, **kwargs):
+    def results(self, ballots, isHonest=False, **kwargs):
         """Combines ballots into results. Override for comparative
         methods.
 

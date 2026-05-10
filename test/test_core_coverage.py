@@ -3,8 +3,6 @@ from types import SimpleNamespace
 
 import pytest
 
-import stratFunctions
-import voterModels
 from compat import as_builtin_scalar, ceil, floor, isnum, mean, median, sqrt, std
 from dataClasses import (
     CandidateWithCount,
@@ -215,7 +213,9 @@ def test_tallies_generate_once_then_iterate_like_list():
         tally[value] += value
 
     assert [t.fullSerialize() for t in tallies] == [[5], [4], [3], []]
-    assert tallies == tallies
+    matching_tallies = Tallies(tallies)
+    matching_tallies.used = True
+    assert tallies == matching_tallies
     assert tallies != Tallies()
     assert tallies == list(tallies)
 
@@ -364,11 +364,11 @@ def test_choosers_track_names_keys_and_selection(monkeypatch):
     assert "Oss.hon_strat." in oss.getName()
 
     pc = ProbChooser([(0.25, beHon), (0.25, beStrat)])
-    monkeypatch.setattr(stratFunctions.random, "random", lambda: 0.1)
+    monkeypatch.setattr("stratFunctions.random.random", lambda: 0.1)
     assert pc(DummyMethod, voter, tally) == "hon"
-    monkeypatch.setattr(stratFunctions.random, "random", lambda: 0.3)
+    monkeypatch.setattr("stratFunctions.random.random", lambda: 0.3)
     assert pc(DummyMethod, voter, tally) == "strat"
-    monkeypatch.setattr(stratFunctions.random, "random", lambda: 0.9)
+    monkeypatch.setattr("stratFunctions.random.random", lambda: 0.9)
     assert pc(DummyMethod, voter, tally) == "strat"
     assert "Prob.hon25_strat25." in pc.getName()
 
@@ -386,7 +386,7 @@ def test_media_helpers_and_tally_updates(monkeypatch):
 
     fuzzy_tally = defaultdict(int)
     shifts = iter([-10, 10, 0, 0])
-    monkeypatch.setattr(stratFunctions.random, "gauss", lambda mu, sigma: next(shifts))
+    monkeypatch.setattr("stratFunctions.random.gauss", lambda mu, sigma: next(shifts))
     assert fuzzyMediaFor(biaser=1)(standings, fuzzy_tally) == [-5, 14, 3, 2]
     assert fuzzy_tally["changed"] == 1
 
@@ -403,7 +403,7 @@ def test_media_helpers_and_tally_updates(monkeypatch):
     assert skewedMediaFor(3)(standings, skewed_tally) == [5, 3.0, 1.0, -1.0]
     assert skewed_tally["changed"] == 0
 
-    monkeypatch.setattr(stratFunctions.random, "gauss", lambda mu, sigma: 0)
+    monkeypatch.setattr("stratFunctions.random.gauss", lambda mu, sigma: 0)
     assert fuzzyMediaFor(biaser=1)(standings) == standings
     assert biasedMediaFor(biaser=1)(standings) == [5, 4, 2.5, 1.3333333333333333]
     assert skewedMediaFor(0)(standings) == standings
@@ -413,7 +413,7 @@ def test_voter_model_edge_cases_and_dimensional_helpers(monkeypatch):
     with pytest.raises(ValueError):
         ReverseModel()(3, 2)
 
-    monkeypatch.setattr(voterModels.random, "randrange", lambda stop: stop - 1)
+    monkeypatch.setattr("voterModels.random.randrange", lambda stop: stop - 1)
     polya = PolyaModel(seedVoters=1, alpha=1, seedModel=DeterministicModel(2))
     assert len(polya(2, 2)) == 2
 
