@@ -22,30 +22,20 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
-
-      - name: Install pipenv
-        run: |
-          python -m pip install --upgrade pip pipenv wheel
-
-      - name: Cache pipenv virtualenv
-        uses: actions/cache@v4
-        with:
-          path: ~/.local/share/virtualenvs
-          key: ${{ runner.os }}-pipenv-${{ hashFiles('**/Pipfile.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-pipenv-
+          cache: pip
+          cache-dependency-path: pyproject.toml
 
       - name: Install project dependencies
         run: |
-          pipenv sync --dev
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev,publish]"
 
       - name: Run tests with coverage
         run: |
-          pipenv run coverage
+          python -m pytest --doctest-modules --cov=. --cov-fail-under=100 --cov-report=term-missing:skip-covered --cov-report=xml:coverage.xml --cov-report=html:htmlcov --junitxml=pytest-results.xml
 
       - name: Build package distributions
         run: |
-          python -m pip install --upgrade build twine
           python -m build
           python -m twine check dist/*
 
@@ -76,7 +66,7 @@ jobs:
               echo "## Coverage"
               echo
               echo '```text'
-              pipenv run python -m coverage report
+              python -m coverage report
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
           fi

@@ -23,7 +23,7 @@ python -m pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@<comm
 For local development from a checkout:
 
 ```shell
-python -m pip install -e ".[dev]"
+python -m pip install -e ".[dev,publish]"
 ```
 
 ## Use In Jupyter
