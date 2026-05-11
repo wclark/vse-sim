@@ -32,28 +32,35 @@ See [Notebook and GitHub installation](docs/INSTALL.md) for Jupyter examples,
 GitHub install variants, and the future PyPI install path.
 
 Testing uses doctests, which should make most things pretty self-documenting.
+For development, install the project in editable mode with the test, lint, and
+publishing helpers:
 
-E.g.:
+    python -m pip install -e ".[dev,publish]"
+
+Then run the legacy doctest examples:
 
     python3 -m doctest methods.py
     python3 -m doctest voterModels.py
     python3 -m doctest dataClasses.py
     python3 vse.py
 
-Or, using the development dependencies from the Pipfile:
+Run the full test and coverage gate:
 
-    pipenv install --dev
-    pipenv run python -m pytest --doctest-modules
+    python -m pytest --doctest-modules --cov=. --cov-fail-under=100
 
-To generate local coverage artifacts:
+To generate the same local coverage artifacts that CI uploads:
 
-    pipenv install --dev
-    pipenv run coverage
+    python -m pytest --doctest-modules --cov=. --cov-fail-under=100 --cov-report=term-missing:skip-covered --cov-report=xml:coverage.xml --cov-report=html:htmlcov --junitxml=pytest-results.xml
 
 To run lint and style checks locally:
 
-    pipenv run lint
-    pipenv run format-check
+    python -m ruff check .
+    python -m ruff format --check .
+
+To build and check package distributions locally:
+
+    python -m build
+    python -m twine check dist/*
 
 The GitHub Actions workflow runs the same coverage check on pushes, pull requests,
 and manual dispatches. It uploads the HTML coverage report plus machine-readable
@@ -92,7 +99,7 @@ and look for the results in `SimResults1.csv`
 
 The root directory keeps the importable Python modules and common entry points so
 older examples and direct imports keep working. Reference output snapshots live
-in `data/`, and the R validation script lives in `scripts/`.
+in `data/`.
 
 New code should prefer the `vse_sim` package namespace. The root-level modules
 are kept for backward compatibility and as a useful regression target during the

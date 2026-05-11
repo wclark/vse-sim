@@ -10,8 +10,11 @@ before publishing `vse-sim` to a public Python package index.
 - Import namespace: `vse_sim`.
 - Runtime dependencies: `numpy`, `scipy`.
 - Build backend: `setuptools`.
+- License file: `LICENSE`.
+- Development dependency groups are declared as `pyproject.toml` extras.
 - Build artifacts checked in CI: wheel and source distribution.
 - Distribution metadata check in CI: `twine check dist/*`.
+- Release publishing workflow: `.github/workflows/python-publish.yml`.
 
 ## Pre-Release Checklist
 
@@ -24,7 +27,7 @@ before publishing `vse-sim` to a public Python package index.
 5. Run the full validation set:
 
    ```shell
-   python -m pip install ".[dev,publish]"
+   python -m pip install -e ".[dev,publish]"
    python -m pytest --doctest-modules --cov=. --cov-fail-under=100
    python -m build
    python -m twine check dist/*
@@ -59,20 +62,16 @@ Prefer PyPI Trusted Publishing over long-lived API tokens for GitHub Actions
 releases. Trusted Publishing uses GitHub Actions OIDC and a short-lived token
 minted by PyPI for the configured project.
 
-When ready, configure a trusted publisher on PyPI with:
+Before publishing the first release, configure a trusted publisher on PyPI with:
 
 - Owner: `wclark`
 - Repository: `vse-sim`
-- Workflow filename: the future publish workflow, for example
-  `python-publish.yml`
+- Workflow filename: `python-publish.yml`
 - Environment: `pypi`
 
-After that PyPI-side setup exists, add a GitHub Actions publish workflow that:
-
-1. Runs on published GitHub releases.
-2. Builds `dist/*`.
-3. Runs `twine check dist/*`.
-4. Publishes with `pypa/gh-action-pypi-publish` and `id-token: write`.
+This repository already includes the GitHub Actions publish workflow. It runs on
+published GitHub releases, builds `dist/*`, runs `twine check dist/*`, and
+publishes with `pypa/gh-action-pypi-publish` using `id-token: write`.
 
 Useful references:
 

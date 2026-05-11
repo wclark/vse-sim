@@ -9,7 +9,7 @@ description = "Voter Satisfaction Efficiency simulation tools for voting systems
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
-license-files = ["docs/LICENSE"]
+license-files = ["LICENSE"]
 keywords = ["elections", "simulation", "voting", "voter satisfaction efficiency"]
 authors = [
     { name = "VSE Sim contributors" },
@@ -27,6 +27,13 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-cov",
+]
+lint = [
+    "ruff",
+]
 dev = [
     "pytest",
     "pytest-cov",
