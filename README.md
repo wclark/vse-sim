@@ -14,6 +14,10 @@ environment:
 
     python -m pip install .
 
+To install directly from GitHub:
+
+    python -m pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@main"
+
 That exposes the modern `vse_sim` package namespace:
 
     from vse_sim import CsvBatch, Mav, PolyaModel, Score, baseRuns, medianRuns
@@ -23,6 +27,9 @@ scripts and examples:
 
     from vse import CsvBatch
     from voterModels import PolyaModel
+
+See [Notebook and GitHub installation](docs/INSTALL.md) for Jupyter examples,
+GitHub install variants, and the future PyPI install path.
 
 Testing uses doctests, which should make most things pretty self-documenting.
 
@@ -53,7 +60,8 @@ and manual dispatches. It uploads the HTML coverage report plus machine-readable
 coverage and JUnit XML files as workflow artifacts.
 
 The same workflow also builds the wheel and source distribution, installs the
-wheel into a clean environment, and uploads the package artifacts.
+wheel into a clean environment, checks the distributions with Twine, and uploads
+the package artifacts.
 
 The `Lint and Style` workflow runs Ruff formatting and lint checks on pushes,
 pull requests, and manual dispatches. To enforce it before merge, mark the
@@ -89,3 +97,6 @@ in `data/`, and the R validation script lives in `scripts/`.
 New code should prefer the `vse_sim` package namespace. The root-level modules
 are kept for backward compatibility and as a useful regression target during the
 packaging migration.
+
+See [Publishing checklist](docs/PUBLISHING.md) for the remaining steps before a
+public `pip install vse-sim` release.
