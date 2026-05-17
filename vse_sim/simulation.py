@@ -23,8 +23,6 @@ from .methods import (
 from .strategies import LazyChooser, OssChooser, ProbChooser, beHon, beStrat, beX, truth
 from .voter_models import PolyaModel  # noqa: F401 - used by doctests
 
-join = os.path.join
-
 
 def uniquify(seq):
     # order preserving

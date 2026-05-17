@@ -304,11 +304,6 @@ def rbeta(a, b):
     return lambda: beta.rvs(a, b)
 
 
-unishdist = rbeta(1, 0.8)
-
-caresDist = rbeta(3, 1.5)
-
-
 class KSElectorate(DimElectorate):
     def chooseClusters(self, n, alpha, caring):
         self.clusters = []

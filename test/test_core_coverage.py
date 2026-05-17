@@ -47,6 +47,7 @@ from voterModels import (
     PersonalityVoter,
     PolyaModel,
     ReverseModel,
+    rbeta,
 )
 
 
@@ -447,3 +448,6 @@ def test_voter_model_edge_cases_and_dimensional_helpers(monkeypatch):
     assert len(built) == 1
     with pytest.raises(AssertionError):
         DimModel(2, dimWeights=[1])
+
+    monkeypatch.setattr("voterModels.beta.rvs", lambda a, b: a + b)
+    assert rbeta(2, 3)() == 5
