@@ -73,7 +73,7 @@ installing or upgrading before rerunning imports.
 
 ## Future PyPI Install
 
-Once the project is published to PyPI, installation should become:
+Once the `vse-sim` project is published to PyPI, installation should become:
 
 ```shell
 python -m pip install vse-sim

@@ -23,6 +23,7 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering",
 ]
 
@@ -33,11 +34,27 @@ test = [
 ]
 lint = [
     "ruff",
+    "tomli",
+    "validate-pyproject",
+]
+audit = [
+    "pip-audit",
+]
+build-check = [
+    "check-wheel-contents",
 ]
 dev = [
+    "build",
+    "check-wheel-contents",
+    "nox",
+    "pip-audit",
+    "pre-commit",
     "pytest",
     "pytest-cov",
     "ruff",
+    "tomli",
+    "twine",
+    "validate-pyproject",
 ]
 publish = [
     "build",
@@ -100,5 +117,23 @@ quote-style = "double"
 indent-style = "space"
 line-ending = "auto"
 
+[tool.check-wheel-contents]
+# Legacy top-level modules intentionally stay in the wheel while the package
+# facade matures, so declare the compatibility surface explicitly.
+toplevel = [
+    "compat.py",
+    "dataClasses.py",
+    "debugDump.py",
+    "methods.py",
+    "mydecorators.py",
+    "sodaTest.py",
+    "stratFunctions.py",
+    "tests.py",
+    "voterModels.py",
+    "vse.py",
+    "vse_sim",
+]
+
 [tool.pytest.ini_options]
+addopts = ["--ignore=noxfile.py"]
 filterwarnings = ["error"]
