@@ -17,8 +17,7 @@ Use `%pip` in notebooks so the package installs into the active kernel.
 %pip install --upgrade vse-sim
 ```
 
-For unreleased DataFrame helper APIs on `main`, install from GitHub until the
-next PyPI release is cut:
+To try unreleased changes from `main`, install directly from GitHub:
 
 ```python
 %pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@main"

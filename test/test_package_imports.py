@@ -8,7 +8,7 @@ import vse
 def test_modern_package_exports_match_legacy_modules():
     import vse_sim
 
-    assert vse_sim.__version__ == "0.1.2"
+    assert vse_sim.__version__ == "0.1.3"
     assert vse_sim.CsvBatch is vse.CsvBatch
     assert vse_sim.Score is methods.Score
     assert vse_sim.Mav is methods.Mav

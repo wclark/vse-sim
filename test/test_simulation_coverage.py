@@ -15,6 +15,7 @@ from methods import (
 )
 from voterModels import DimVoter, KSElectorate, KSModel, Voter
 from vse import CsvBatch, uniquify
+from vse_sim.data_classes import CandidateWithCount
 
 
 def test_csv_batch_save_file_and_repo_metadata(tmp_path, monkeypatch):
@@ -89,10 +90,35 @@ def test_irv_helpers_and_generator_inputs():
     assert irv.getLeast(ranked, keep={0, 1, 2}) is None
     assert irv.results(iter([[0, 1, 2], [2, 1, 0]]))[1] == 0
 
+    mismatch_ballots = [[1, 2, 0]] * 4 + [[0, 2, 1]] * 3 + [[2, 1, 0]] * 2
+    mismatch_results = irv.results(mismatch_ballots)
+    assert mismatch_results == [1, 2, 0]
+    assert irv.winner(mismatch_results) == 1
+
     ballot = Irv().stratBallotFor([3, 2, 1, 0])(Irv, Voter([6, 3, 5, 2]))
     assert sorted(ballot) == [0, 1, 2, 3]
 
     assert IrvPrime().results(iter([[0, 1], [1, 0]]))[0] in {0, 1}
+
+
+def test_irv_empty_elimination_branches(monkeypatch):
+    irv = Irv()
+    assert irv.runIrv({}, 2) == [-1, -1]
+
+    prime = IrvPrime()
+    candidate_vote_calls = 0
+
+    def fake_candidate_votes(_remaining):
+        nonlocal candidate_vote_calls
+        candidate_vote_calls += 1
+        if candidate_vote_calls == 1:
+            return [CandidateWithCount(0, 0), CandidateWithCount(1, 0)]
+        return []
+
+    monkeypatch.setattr(prime, "buildPreferenceSchedule", lambda _ballots: {(0, 1): 1})
+    monkeypatch.setattr(prime, "candidateVotes", fake_candidate_votes)
+
+    assert prime.results([[0, 1]]) == [-1, -1]
 
 
 def test_v321_honest_results_and_strategy_branches():
