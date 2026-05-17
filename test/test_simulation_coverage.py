@@ -95,6 +95,12 @@ def test_irv_helpers_and_generator_inputs():
     assert mismatch_results == [1, 2, 0]
     assert irv.winner(mismatch_results) == 1
 
+    honest_ballot = Irv.honBallot(Irv, Voter([0, 1, 2]))
+    honest_results = irv.results([honest_ballot])
+    assert honest_ballot == [2, 1, 0]
+    assert honest_results == [0, 1, 2]
+    assert irv.winner(honest_results) == 2
+
     ballot = Irv().stratBallotFor([3, 2, 1, 0])(Irv, Voter([6, 3, 5, 2]))
     assert sorted(ballot) == [0, 1, 2, 3]
 

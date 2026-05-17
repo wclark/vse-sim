@@ -275,7 +275,7 @@ def BulletyApprovalWith(bullets=0.5, asClass=False):
 def Srv(topRank=10):
     """Score Runoff Voting
     >>> Srv().resultsFor(DeterministicModel(3)(5,3),Irv().honBallot)["results"]
-    [0.8, 1.2, 1.21]
+    [1.2, 0.8, 1.21]
     >>> Srv().results([[0,1,2]])[2]
     2.0
     >>> Srv().results([[0,1,2],[2,1,0]])[1]
@@ -607,7 +607,7 @@ class Irv(Method):
         """IRV results.
 
         >>> Irv().resultsFor(DeterministicModel(3)(5,3),Irv().honBallot)["results"]
-        [2, 1, 0]
+        [0, 1, 2]
         >>> Irv().results([[0,1,2]])[2]
         0
         >>> Irv().results([[0,1,2],[2,1,0]])[1]
@@ -625,13 +625,11 @@ class Irv(Method):
 
         >>> Irv.honBallot(Irv,Voter([4,1,6,3]))
         [2, 0, 3, 1]
+        >>> Irv.honBallot(Irv,Voter([0,1,2]))
+        [2, 1, 0]
         """
-        ballot = [-1] * len(voter)
-        order = sorted(enumerate(voter), key=lambda x: x[1])
-        for i, cand in enumerate(order):
-            ballot[cand[0]] = i
-        # print("hballot",ballot)
-        return ballot
+        order = sorted(enumerate(voter), key=lambda x: (-x[1], x[0]))
+        return [candidate for candidate, _utility in order]
 
     @classmethod
     def fillStratBallot(
@@ -649,7 +647,7 @@ class Irv(Method):
     ):
         """
         >>> Irv().stratBallotFor([3,2,1,0])(Irv,Voter([3,6,5,2]))
-        [1, 2, 3, 0]
+        [2, 1, 0, 3]
         """
         i = n - 1
         winnerQ = voter[frontId]
@@ -671,8 +669,10 @@ class Irv(Method):
             if voter[nextLoser] <= winnerQ:
                 ballot[nextLoser] = i
                 i -= 1
-        # assert list(range(n)) == sorted(ballot)
         assert i == -1
+        ballot[:] = [
+            candidate for candidate, _rank in sorted(enumerate(ballot), key=lambda x: -x[1])
+        ]
 
 
 class IrvPrime(Irv):
@@ -849,7 +849,7 @@ class V321(Mav):
 
 
         >>> Irv().stratBallotFor([3,2,1,0])(Irv,Voter([3,6,5,2]))
-        [1, 2, 3, 0]
+        [2, 1, 0, 3]
         """
         places = sorted(enumerate(polls), key=lambda x: -x[1])  # high to low
         top3 = [c for c, r in places[:3]]
