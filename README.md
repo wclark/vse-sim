@@ -37,6 +37,14 @@ publishing helpers:
 
     python -m pip install -e ".[dev,publish]"
 
+Optionally install the local Git hooks:
+
+    pre-commit install
+
+The main local readiness checks can also be run through Nox:
+
+    nox
+
 Then run the legacy doctest examples:
 
     python3 -m doctest methods.py
@@ -54,6 +62,7 @@ To generate the same local coverage artifacts that CI uploads:
 
 To run lint and style checks locally:
 
+    validate-pyproject pyproject.toml
     python -m ruff check .
     python -m ruff format --check .
 
@@ -61,6 +70,11 @@ To build and check package distributions locally:
 
     python -m build
     python -m twine check dist/*
+    check-wheel-contents dist/*.whl
+
+To audit runtime dependencies for known vulnerabilities:
+
+    python -m pip_audit --skip-editable --progress-spinner off .
 
 The GitHub Actions workflow runs the same coverage check on pushes, pull requests,
 and manual dispatches. It uploads the HTML coverage report plus machine-readable
@@ -70,18 +84,16 @@ The same workflow also builds the wheel and source distribution, installs the
 wheel into a clean environment, checks the distributions with Twine, and uploads
 the package artifacts.
 
-The `Lint and Style` workflow runs Ruff formatting and lint checks on pushes,
-pull requests, and manual dispatches. To enforce it before merge, mark the
-`Lint and Style / Ruff` check as required in the repository branch protection or
-ruleset settings.
+The `Lint and Style` workflow validates `pyproject.toml`, then runs Ruff
+formatting and lint checks on pushes, pull requests, and manual dispatches.
 
 ## Security automation
 
 GitHub Actions also runs CodeQL code scanning for Python on pushes, pull
 requests, a weekly schedule, and manual dispatches. Dependabot checks Python and
-GitHub Actions dependencies weekly. The dependency review workflow reports pull
-request dependency vulnerabilities; enable the repository Dependency graph in
-GitHub's security settings before making that check required.
+GitHub Actions dependencies weekly. Dependency review blocks pull requests that
+introduce moderate or higher vulnerabilities, and the dependency audit workflow
+runs `pip-audit` against the project dependencies.
 
 ## Running simulations
 

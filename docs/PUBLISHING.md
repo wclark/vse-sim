@@ -14,6 +14,7 @@ before publishing `vse-sim` to a public Python package index.
 - Development dependency groups are declared as `pyproject.toml` extras.
 - Build artifacts checked in CI: wheel and source distribution.
 - Distribution metadata check in CI: `twine check dist/*`.
+- Wheel contents check in CI: `check-wheel-contents dist/*.whl`.
 - Release publishing workflow: `.github/workflows/python-publish.yml`.
 
 ## Pre-Release Checklist
@@ -28,9 +29,20 @@ before publishing `vse-sim` to a public Python package index.
 
    ```shell
    python -m pip install -e ".[dev,publish]"
+   nox
+   ```
+
+   Or run the same checks directly:
+
+   ```shell
    python -m pytest --doctest-modules --cov=. --cov-fail-under=100
+   validate-pyproject pyproject.toml
+   python -m ruff format --check .
+   python -m ruff check .
+   python -m pip_audit --skip-editable --progress-spinner off .
    python -m build
    python -m twine check dist/*
+   check-wheel-contents dist/*.whl
    ```
 
 6. Install the built wheel in a clean environment and run an import smoke test.
@@ -62,12 +74,18 @@ Prefer PyPI Trusted Publishing over long-lived API tokens for GitHub Actions
 releases. Trusted Publishing uses GitHub Actions OIDC and a short-lived token
 minted by PyPI for the configured project.
 
-Before publishing the first release, configure a trusted publisher on PyPI with:
+Before publishing the first release, configure a pending trusted publisher on
+PyPI with:
 
+- Project name: `vse-sim`
 - Owner: `wclark`
 - Repository: `vse-sim`
 - Workflow filename: `python-publish.yml`
 - Environment: `pypi`
+
+PyPI pending publishers do not reserve the project name. The `vse-sim` project
+is created only when the first release is successfully uploaded from the trusted
+GitHub Actions workflow.
 
 This repository already includes the GitHub Actions publish workflow. It runs on
 published GitHub releases, builds `dist/*`, runs `twine check dist/*`, and

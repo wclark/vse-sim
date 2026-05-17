@@ -3,6 +3,7 @@ python3
 __pycache__
 .pytest_cache/
 .ruff_cache/
+.nox/
 .venv/
 .package-smoke/
 .coverage
