@@ -4,6 +4,10 @@ layout: default
 permalink: /VSEbasic
 ---
 
+> Python package note: install the simulator with `python -m pip install
+> vse-sim`, or `%pip install vse-sim` in Jupyter. See [installation and
+> notebook usage](./INSTALL.md) for examples.
+
 Voter Satisfaction Efficiency, or VSE, is a measure of the quality of a election method. A VSE of 100% would mean an impossibly perfect method; 0% or lower would mean that the society would be better off picking a winner at random.
 
 To calculate VSE, you simulate thousands of elections, using voters who cluster on issues in a realistic way. Since the voters are simulated, you can know exactly how satisfied they would be by each candidate; that is, how close the candidate is on the issues they care about.

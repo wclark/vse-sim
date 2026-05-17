@@ -1,121 +1,131 @@
-# Voter Satisfaction Efficiency
+# VSE Sim
 
-These are some methods for running VSE (Voter Satisfaction Efficiency)
-simulations for various voting systems.
+VSE Sim provides Python tools for running Voter Satisfaction Efficiency (VSE)
+simulations for voting methods.
 
-See [Voter Satisfaction Efficiency FAQ](http://electionscience.github.io/vse-sim/) for an explanation of the methods and results.
+The package is published as `vse-sim` and imports as `vse_sim`. The original
+top-level modules, such as `vse` and `voterModels`, are still installed for
+older scripts and examples.
 
-## Installing the code
+For background on the metric and published simulation results, see the
+[Voter Satisfaction Efficiency FAQ](http://electionscience.github.io/vse-sim/).
 
-Requirements: Python 3.10+, NumPy, SciPy.
+## Install
 
-For notebook and library-style usage, install the package into the active
-environment:
+Install the released package from PyPI:
 
-    python -m pip install .
+```shell
+python -m pip install vse-sim
+```
 
-To install directly from GitHub:
+In a notebook, use `%pip` so the package is installed into the active kernel:
 
-    python -m pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@main"
+```python
+%pip install vse-sim
+```
 
-That exposes the modern `vse_sim` package namespace:
+For reproducible notebooks or environments, pin a version:
 
-    from vse_sim import CsvBatch, Mav, PolyaModel, Score, baseRuns, medianRuns
+```shell
+python -m pip install "vse-sim==0.1.0"
+```
 
-The legacy top-level modules remain installed and importable for existing
-scripts and examples:
+To install the latest code from GitHub instead of PyPI:
 
-    from vse import CsvBatch
-    from voterModels import PolyaModel
+```shell
+python -m pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@main"
+```
 
-See [Notebook and GitHub installation](docs/INSTALL.md) for Jupyter examples,
-GitHub install variants, and the future PyPI install path.
+## Basic Usage
 
-Testing uses doctests, which should make most things pretty self-documenting.
-For development, install the project in editable mode with the test, lint, and
-publishing helpers:
+Prefer the modern `vse_sim` namespace for new code:
 
-    python -m pip install -e ".[dev,publish]"
+```python
+from debugDump import setDebug
+from vse_sim import CsvBatch, Mav, PolyaModel, Score, baseRuns, medianRuns
 
-Optionally install the local Git hooks:
+setDebug(False)
 
-    pre-commit install
+csvs = CsvBatch(
+    PolyaModel(),
+    [[Score(), baseRuns], [Mav(), medianRuns]],
+    nvot=5,
+    ncand=4,
+    niter=3,
+    seed="quickstart",
+)
 
-The main local readiness checks can also be run through Nox:
+len(csvs.rows)
+```
 
-    nox
+Write CSV output to the current working directory:
 
-Then run the legacy doctest examples:
+```python
+csvs.saveFile("quickstart-results")
+```
 
-    python3 -m doctest methods.py
-    python3 -m doctest voterModels.py
-    python3 -m doctest dataClasses.py
-    python3 vse.py
+Legacy imports remain supported:
 
-Run the full test and coverage gate:
+```python
+from vse import CsvBatch
+from voterModels import PolyaModel
+```
 
-    python -m pytest --doctest-modules --cov=. --cov-fail-under=100
+See [Installation and notebook usage](docs/INSTALL.md) for more examples,
+including GitHub installs and notebook workflow notes.
 
-To generate the same local coverage artifacts that CI uploads:
+## Development
 
-    python -m pytest --doctest-modules --cov=. --cov-fail-under=100 --cov-report=term-missing:skip-covered --cov-report=xml:coverage.xml --cov-report=html:htmlcov --junitxml=pytest-results.xml
+Create or activate a Python 3.10+ environment, then install the project in
+editable mode with development tools:
 
-To run lint and style checks locally:
+```shell
+python -m pip install -e ".[dev,publish]"
+```
 
-    validate-pyproject pyproject.toml
-    python -m ruff check .
-    python -m ruff format --check .
+Install local Git hooks if you want pre-commit checks:
 
-To build and check package distributions locally:
+```shell
+pre-commit install
+```
 
-    python -m build
-    python -m twine check dist/*
-    check-wheel-contents dist/*.whl
+Run the default local quality gate:
 
-To audit runtime dependencies for known vulnerabilities:
+```shell
+nox
+```
 
-    python -m pip_audit --skip-editable --progress-spinner off .
+The default Nox gate validates metadata, runs Ruff format/lint checks, runs the
+Python 3.10 test and coverage suite, builds the package, validates distribution
+metadata and wheel contents, and audits dependencies.
 
-The GitHub Actions workflow runs the same coverage check on pushes, pull requests,
-and manual dispatches. It uploads the HTML coverage report plus machine-readable
-coverage and JUnit XML files as workflow artifacts.
+Run Python 3.12 tests explicitly when that interpreter is available:
 
-The same workflow also builds the wheel and source distribution, installs the
-wheel into a clean environment, checks the distributions with Twine, and uploads
-the package artifacts.
+```shell
+nox -s tests-3.12
+```
 
-The `Lint and Style` workflow validates `pyproject.toml`, then runs Ruff
-formatting and lint checks on pushes, pull requests, and manual dispatches.
+Useful direct commands:
 
-## Security automation
+```shell
+python -m pytest --doctest-modules --cov=. --cov-fail-under=100
+python -m ruff format --check .
+python -m ruff check .
+python -m build
+python -m twine check dist/*
+check-wheel-contents dist/*.whl
+python -m pip_audit --skip-editable --progress-spinner off .
+```
 
-GitHub Actions also runs CodeQL code scanning for Python on pushes, pull
-requests, a weekly schedule, and manual dispatches. Dependabot checks Python and
-GitHub Actions dependencies weekly. Dependency review blocks pull requests that
-introduce moderate or higher vulnerabilities, and the dependency audit workflow
-runs `pip-audit` against the project dependencies.
+Coverage reports are written to `htmlcov/`, `coverage.xml`, and
+`pytest-results.xml` when the full coverage command is run.
 
-## Running simulations
+## Repository Layout
 
-Try
+- `vse_sim/`: modern package facade for new imports.
+- Root Python modules: legacy-compatible modules that remain importable.
+- `test/`: coverage and compatibility tests.
+- `data/`: retained legacy/reference data artifacts.
+- `docs/`: GitHub Pages content plus install and release notes.
 
-    $ python3
-    >>> from vse import CsvBatch, baseRuns, Mav, medianRuns, Score
-    >>> from voterModels import PolyaModel
-    >>> csvs = CsvBatch(PolyaModel(), [[Score(), baseRuns], [Mav(), medianRuns]], nvot=5, ncand=4, niter=3)
-    >>> csvs.saveFile()
-
-and look for the results in `SimResults1.csv`
-
-## Repository layout
-
-The root directory keeps the importable Python modules and common entry points so
-older examples and direct imports keep working. Reference output snapshots live
-in `data/`.
-
-New code should prefer the `vse_sim` package namespace. The root-level modules
-are kept for backward compatibility and as a useful regression target during the
-packaging migration.
-
-See [Publishing checklist](docs/PUBLISHING.md) for the remaining steps before a
-public `pip install vse-sim` release.
+See [Release process](docs/PUBLISHING.md) for the PyPI publishing workflow.

@@ -63,7 +63,8 @@ publish = [
 
 [project.urls]
 Homepage = "https://github.com/wclark/vse-sim"
-Documentation = "http://electionscience.github.io/vse-sim/"
+Documentation = "https://github.com/wclark/vse-sim/blob/main/docs/INSTALL.md"
+FAQ = "https://electionscience.github.io/vse-sim/"
 Issues = "https://github.com/wclark/vse-sim/issues"
 Repository = "https://github.com/wclark/vse-sim"
 

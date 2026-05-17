@@ -1,81 +1,83 @@
-# Publishing Checklist
+# Release Process
 
-The package metadata is present in `pyproject.toml`, and CI builds both wheel
-and source distribution artifacts. This checklist captures the remaining steps
-before publishing `vse-sim` to a public Python package index.
+`vse-sim` is published on PyPI and uses GitHub Actions Trusted Publishing. No
+PyPI API token is stored in the repository.
 
-## Current Preparation
+## Current Package
 
-- Distribution name: `vse-sim`.
-- Import namespace: `vse_sim`.
-- Runtime dependencies: `numpy`, `scipy`.
-- Build backend: `setuptools`.
-- License file: `LICENSE`.
-- Development dependency groups are declared as `pyproject.toml` extras.
-- Build artifacts checked in CI: wheel and source distribution.
-- Distribution metadata check in CI: `twine check dist/*`.
-- Wheel contents check in CI: `check-wheel-contents dist/*.whl`.
-- Release publishing workflow: `.github/workflows/python-publish.yml`.
+- Distribution name: `vse-sim`
+- Import namespace: `vse_sim`
+- Current public version: `0.1.0`
+- PyPI: <https://pypi.org/project/vse-sim/>
+- GitHub releases: <https://github.com/wclark/vse-sim/releases>
+- Publish workflow: `.github/workflows/python-publish.yml`
+- GitHub Actions environment: `pypi`
 
-## Pre-Release Checklist
+## Before A Release
 
-1. Confirm that the `vse-sim` project name is available or controlled on PyPI.
-2. Decide the first public version number.
-3. Update both version locations:
+1. Choose the next version number.
+2. Update both version locations:
    - `pyproject.toml`
    - `vse_sim/__init__.py`
-4. Confirm the README renders cleanly as the package long description.
-5. Run the full validation set:
+3. Update release notes or documentation that mention the current version.
+4. Run the full local validation gate:
 
    ```shell
    python -m pip install -e ".[dev,publish]"
    nox
    ```
 
-   Or run the same checks directly:
+5. Run additional interpreter coverage when available:
 
    ```shell
-   python -m pytest --doctest-modules --cov=. --cov-fail-under=100
-   validate-pyproject pyproject.toml
-   python -m ruff format --check .
-   python -m ruff check .
-   python -m pip_audit --skip-editable --progress-spinner off .
-   python -m build
-   python -m twine check dist/*
-   check-wheel-contents dist/*.whl
+   nox -s tests-3.12
    ```
 
-6. Install the built wheel in a clean environment and run an import smoke test.
-7. Create and push a signed or otherwise trusted release tag.
+6. Confirm the package builds and installs cleanly from the generated wheel if
+   the release changes packaging behavior.
 
-## TestPyPI Dry Run
+## Publishing
 
-Use TestPyPI before the first real release:
+Publish by creating a GitHub release whose tag matches the package version with
+a leading `v`, for example `v0.1.0`.
+
+The release workflow runs when a GitHub release is published. It:
+
+1. Builds the source distribution and wheel.
+2. Runs `twine check dist/*`.
+3. Runs `check-wheel-contents dist/*.whl`.
+4. Publishes to PyPI through Trusted Publishing.
+5. Uploads PyPI attestations through the PyPA publish action.
+
+## After Publishing
+
+Verify the new release:
 
 ```shell
-python -m pip install ".[publish]"
-python -m build
-python -m twine check dist/*
-python -m twine upload --repository testpypi dist/*
+python -m pip index versions vse-sim
 ```
 
-Then install from TestPyPI, using PyPI as an extra index for dependencies:
+Run a clean install smoke test:
 
 ```shell
-python -m pip install \
-  --index-url https://test.pypi.org/simple/ \
-  --extra-index-url https://pypi.org/simple/ \
-  vse-sim
+python -m venv .package-smoke
+.package-smoke/Scripts/python -m pip install --upgrade pip
+.package-smoke/Scripts/python -m pip install "vse-sim==0.1.0"
+.package-smoke/Scripts/python -m pip check
 ```
 
-## PyPI Trusted Publishing
+Then verify imports:
 
-Prefer PyPI Trusted Publishing over long-lived API tokens for GitHub Actions
-releases. Trusted Publishing uses GitHub Actions OIDC and a short-lived token
-minted by PyPI for the configured project.
+```shell
+.package-smoke/Scripts/python -c "from vse_sim import CsvBatch, PolyaModel; from vse import CsvBatch as LegacyCsvBatch; assert CsvBatch is LegacyCsvBatch; print('ok')"
+```
 
-Before publishing the first release, configure a pending trusted publisher on
-PyPI with:
+On macOS or Linux, use `.package-smoke/bin/python` instead of
+`.package-smoke/Scripts/python`.
+
+## Trusted Publishing Configuration
+
+The PyPI trusted publisher should match these values:
 
 - Project name: `vse-sim`
 - Owner: `wclark`
@@ -83,16 +85,6 @@ PyPI with:
 - Workflow filename: `python-publish.yml`
 - Environment: `pypi`
 
-PyPI pending publishers do not reserve the project name. The `vse-sim` project
-is created only when the first release is successfully uploaded from the trusted
-GitHub Actions workflow.
-
-This repository already includes the GitHub Actions publish workflow. It runs on
-published GitHub releases, builds `dist/*`, runs `twine check dist/*`, and
-publishes with `pypa/gh-action-pypi-publish` using `id-token: write`.
-
-Useful references:
-
-- [Python Packaging User Guide: installing packages](https://packaging.python.org/en/latest/tutorials/installing-packages/)
-- [Python Packaging User Guide: building and publishing](https://packaging.python.org/guides/section-build-and-publish/)
-- [PyPI Trusted Publishers](https://docs.pypi.org/trusted-publishers/)
+If publishing fails with a Trusted Publishing error, check those values first,
+then confirm the workflow job still has `id-token: write` and `environment:
+pypi`.
