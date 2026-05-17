@@ -3,15 +3,28 @@ import os
 import pandas as pd
 
 from vse_sim import (
+    IRNR,
+    V321,
     CsvBatch,
+    DeterministicModel,
+    DimModel,
+    Irv,
     RandomModel,
+    Schulze,
     Score,
+    Srv,
+    Voter,
     VseResults,
+    ballots_from_dataframe,
+    ballots_to_dataframe,
     baseRuns,
     read_results_csv,
     rows_to_dataframe,
     run_simulation,
+    run_simulation_dataframe,
+    scores_to_dataframe,
     summarize_vse,
+    to_dataframe,
 )
 
 os.environ.setdefault("MPLBACKEND", "Agg")
@@ -30,7 +43,9 @@ def test_csv_batch_dataframe_helpers():
 
     assert list(frame.columns[:3]) == ["eid", "emodel", "ncand"]
     assert batch.dataframe.equals(frame)
+    assert batch.df.equals(frame)
     assert batch.to_dataframe(copy=False).equals(frame)
+    assert to_dataframe(batch, copy=False).equals(frame)
     assert isinstance(batch.results, VseResults)
     assert len(frame) == len(batch.rows)
     assert {"method", "chooser", "mean_vse", "median_vse"} <= set(summary.columns)
@@ -64,6 +79,8 @@ def test_dataframe_module_helpers_accept_rows_and_frames():
     assert frame["vse"].tolist() == [1.0, 0.5, 0.25]
     assert same_frame is frame
     assert len(result) == 3
+    assert result.dataframe is result.frame
+    assert result.df is result.frame
     assert result.to_dataframe(copy=False) is result.frame
     assert summary_from_rows["method"].tolist() == ["Score", "Mav"]
     assert summary_from_rows["mean_vse"].round(2).tolist() == [0.75, 0.25]
@@ -114,3 +131,69 @@ def test_vse_results_reports_csv_and_run_helper(tmp_path):
 
     assert isinstance(simulated, VseResults)
     assert isinstance(simulated.frame, pd.DataFrame)
+
+
+def test_native_dataframe_conversions_for_voters_ballots_and_scores():
+    voter = Voter([0.1, 0.2, 0.3])
+    voters = DeterministicModel(3)(3, 3)
+    dim_voters = DimModel(2, baseElectorate=DeterministicModel(3))(2, 3)
+
+    voter_frame = voter.to_dataframe(voter_id="voter-a")
+    voter_property_frame = voter.dataframe
+    electorate_frame = voters.to_dataframe()
+    electorate_wide = voters.to_dataframe(wide=True)
+    model_frame = DeterministicModel(3).to_dataframe(2, 3)
+    dim_frame = dim_voters.to_dataframe()
+
+    assert voter_frame["voter"].tolist() == ["voter-a", "voter-a", "voter-a"]
+    assert voter_property_frame.equals(voter.df)
+    assert voter_property_frame["utility"].tolist() == [0.1, 0.2, 0.3]
+    assert electorate_frame[["voter", "candidate", "utility"]].shape == (9, 3)
+    assert voters.dataframe.equals(electorate_frame)
+    assert voters.df.equals(electorate_frame)
+    assert voters.wide_dataframe.equals(electorate_wide)
+    assert list(electorate_wide.columns[:4]) == [
+        "voter",
+        "candidate_0",
+        "candidate_1",
+        "candidate_2",
+    ]
+    assert model_frame["voter"].nunique() == 2
+    assert "dimension_0" in dim_frame.columns
+
+    method = Score()
+    ballots = method.honest_ballots(voters)
+    ballot_frame = method.ballots_dataframe(voters)
+    ballot_wide = method.ballots_dataframe(voters, wide=True)
+    score_frame = method.results_dataframe(ballot_frame)
+
+    assert ballots_from_dataframe(ballot_frame) == ballots
+    assert ballots_from_dataframe(ballot_wide) == ballots
+    assert ballots_from_dataframe(pd.DataFrame(ballots)) == ballots
+    assert ballots_to_dataframe(ballots)["ballot"].tolist() == ballot_frame["ballot"].tolist()
+    assert list(ballots_to_dataframe(ballots, wide=True).columns) == [
+        "voter",
+        "candidate_0",
+        "candidate_1",
+        "candidate_2",
+    ]
+    assert list(score_frame.columns) == ["method", "candidate", "score"]
+    assert scores_to_dataframe([1, 2])["score"].tolist() == [1, 2]
+    assert to_dataframe(voters, copy=False).equals(electorate_frame)
+    assert to_dataframe(ballot_frame, copy=False) is ballot_frame
+
+    assert isinstance(
+        run_simulation_dataframe(RandomModel(), [[Score(), baseRuns]], 5, 4, 1).head(), pd.DataFrame
+    )
+
+
+def test_dataframe_ballots_work_with_method_result_variants():
+    voters = DeterministicModel(3)(5, 3)
+    methods = [Srv(), Irv(), V321(), Schulze(), IRNR()]
+
+    for method in methods:
+        ballots = method.ballots_dataframe(voters)
+        scores = method.results_dataframe(ballots, isHonest=True)
+
+        assert isinstance(scores, pd.DataFrame)
+        assert scores["candidate"].tolist() == [0, 1, 2]

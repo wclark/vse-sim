@@ -122,6 +122,11 @@ class CsvBatch:
         """Return this batch's rows as a pandas DataFrame."""
         return self.to_dataframe()
 
+    @property
+    def df(self):
+        """Alias for ``dataframe``."""
+        return self.dataframe
+
     def to_dataframe(self, copy=True):
         """Return this batch's rows as a pandas DataFrame."""
         return self.results.to_dataframe(copy=copy)
@@ -225,6 +230,11 @@ def run_simulation(
     return batch.results
 
 
+def run_simulation_dataframe(*args, **kwargs):
+    """Run a simulation and return its result rows as a pandas DataFrame."""
+    return run_simulation(*args, **kwargs).dataframe
+
+
 __all__ = [
     "CsvBatch",
     "allSystems",
@@ -232,6 +242,7 @@ __all__ = [
     "markMethods",
     "medianRuns",
     "run_simulation",
+    "run_simulation_dataframe",
     "uniquify",
 ]
 

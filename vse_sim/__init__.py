@@ -1,7 +1,18 @@
 """Modern package facade for the VSE simulation library."""
 
 from .data_classes import Method, SideTally, Tallies
-from .dataframe import VseResults, read_results_csv, rows_to_dataframe, summarize_vse
+from .dataframe import (
+    VseResults,
+    ballots_from_dataframe,
+    ballots_to_dataframe,
+    read_results_csv,
+    rows_to_dataframe,
+    scores_to_dataframe,
+    summarize_vse,
+    to_dataframe,
+    voter_to_dataframe,
+    voters_to_dataframe,
+)
 from .methods import (
     IRNR,
     V321,
@@ -24,6 +35,7 @@ from .simulation import (
     markMethods,
     medianRuns,
     run_simulation,
+    run_simulation_dataframe,
     uniquify,
 )
 from .strategies import (
@@ -98,6 +110,8 @@ __all__ = [
     "VseResults",
     "Voter",
     "allSystems",
+    "ballots_from_dataframe",
+    "ballots_to_dataframe",
     "baseRuns",
     "beHon",
     "beStrat",
@@ -111,9 +125,14 @@ __all__ = [
     "read_results_csv",
     "rows_to_dataframe",
     "run_simulation",
+    "run_simulation_dataframe",
+    "scores_to_dataframe",
     "skewedMediaFor",
     "summarize_vse",
+    "to_dataframe",
     "topNMediaFor",
     "truth",
     "uniquify",
+    "voter_to_dataframe",
+    "voters_to_dataframe",
 ]

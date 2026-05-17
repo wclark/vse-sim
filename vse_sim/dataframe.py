@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import dataclass
+from inspect import signature
 from pathlib import Path
 
 import pandas as pd
@@ -24,15 +25,186 @@ def _unique_columns(*groups) -> tuple[str, ...]:
     return tuple(columns)
 
 
+def _voter_metadata(voter) -> dict:
+    metadata = {}
+    for attribute in ("cluster", "personality"):
+        if hasattr(voter, attribute):
+            metadata[attribute] = getattr(voter, attribute)
+    if hasattr(voter, "dims"):
+        for dimension, value in enumerate(voter.dims):
+            metadata[f"dimension_{dimension}"] = value
+    return metadata
+
+
+def _call_dataframe_method(method, copy=True, **kwargs) -> pd.DataFrame:
+    if "copy" in signature(method).parameters:
+        return method(copy=copy, **kwargs)
+    frame = method(**kwargs)
+    return frame.copy() if copy else frame
+
+
+def to_dataframe(data, copy=True, **kwargs) -> pd.DataFrame:
+    """Convert VSE objects, result rows, or records to a pandas DataFrame."""
+    if isinstance(data, VseResults):
+        return data.to_dataframe(copy=copy)
+    if isinstance(data, pd.DataFrame):
+        return data.copy() if copy else data
+    dataframe_method = getattr(data, "to_dataframe", None)
+    if callable(dataframe_method):
+        return _call_dataframe_method(dataframe_method, copy=copy, **kwargs)
+    return pd.DataFrame(data, **kwargs)
+
+
 def rows_to_dataframe(
     rows: Iterable[dict] | pd.DataFrame | "VseResults", copy=True
 ) -> pd.DataFrame:
     """Convert simulation rows, a DataFrame, or ``VseResults`` to a DataFrame."""
-    if isinstance(rows, VseResults):
-        return rows.to_dataframe(copy=copy)
-    if isinstance(rows, pd.DataFrame):
-        return rows.copy() if copy else rows
+    return to_dataframe(rows, copy=copy)
+
+
+def voter_to_dataframe(
+    voter,
+    voter_id=None,
+    voter_column="voter",
+    candidate_column="candidate",
+    value_column="utility",
+) -> pd.DataFrame:
+    """Return one voter's candidate utilities as a tidy DataFrame."""
+    metadata = _voter_metadata(voter)
+    rows = []
+    for candidate, value in enumerate(voter):
+        row = {candidate_column: candidate, value_column: value, **metadata}
+        if voter_id is not None:
+            row[voter_column] = voter_id
+        rows.append(row)
     return pd.DataFrame(rows)
+
+
+def voters_to_dataframe(
+    voters,
+    wide=False,
+    voter_column="voter",
+    candidate_column="candidate",
+    value_column="utility",
+    candidate_prefix="candidate_",
+) -> pd.DataFrame:
+    """Return voter utilities as a tidy or wide DataFrame."""
+    if wide:
+        rows = []
+        for voter_id, voter in enumerate(voters):
+            row = {
+                voter_column: voter_id,
+                **{
+                    f"{candidate_prefix}{candidate}": value for candidate, value in enumerate(voter)
+                },
+                **_voter_metadata(voter),
+            }
+            rows.append(row)
+        return pd.DataFrame(rows)
+
+    rows = []
+    for voter_id, voter in enumerate(voters):
+        rows.extend(
+            voter_to_dataframe(
+                voter,
+                voter_id=voter_id,
+                voter_column=voter_column,
+                candidate_column=candidate_column,
+                value_column=value_column,
+            ).to_dict("records")
+        )
+    return pd.DataFrame(rows)
+
+
+def ballots_to_dataframe(
+    ballots,
+    wide=False,
+    method=None,
+    voter_column="voter",
+    candidate_column="candidate",
+    value_column="ballot",
+    candidate_prefix="candidate_",
+) -> pd.DataFrame:
+    """Return ballots as a tidy or wide DataFrame."""
+    if wide:
+        rows = []
+        for voter_id, ballot in enumerate(ballots):
+            row = {
+                voter_column: voter_id,
+                **{
+                    f"{candidate_prefix}{candidate}": value
+                    for candidate, value in enumerate(ballot)
+                },
+            }
+            if method is not None:
+                row["method"] = str(method)
+            rows.append(row)
+        return pd.DataFrame(rows)
+
+    rows = []
+    for voter_id, ballot in enumerate(ballots):
+        for candidate, value in enumerate(ballot):
+            row = {
+                voter_column: voter_id,
+                candidate_column: candidate,
+                value_column: value,
+            }
+            if method is not None:
+                row["method"] = str(method)
+            rows.append(row)
+    return pd.DataFrame(rows)
+
+
+def ballots_from_dataframe(
+    ballots,
+    voter_column="voter",
+    candidate_column="candidate",
+    value_column="ballot",
+    candidate_prefix="candidate_",
+):
+    """Convert tidy or wide ballot DataFrames back to method-ready ballots."""
+    if not isinstance(ballots, pd.DataFrame):
+        return ballots if type(ballots) is list else list(ballots)
+
+    if {voter_column, candidate_column, value_column} <= set(ballots.columns):
+        return (
+            ballots.pivot(index=voter_column, columns=candidate_column, values=value_column)
+            .sort_index()
+            .sort_index(axis=1)
+            .to_numpy()
+            .tolist()
+        )
+
+    candidate_columns = [
+        column for column in ballots.columns if str(column).startswith(candidate_prefix)
+    ]
+    if candidate_columns:
+        candidate_columns = sorted(
+            candidate_columns, key=lambda column: int(str(column).split("_")[-1])
+        )
+        return ballots[candidate_columns].to_numpy().tolist()
+
+    return ballots.to_numpy().tolist()
+
+
+def scores_to_dataframe(
+    scores,
+    method=None,
+    candidate_column="candidate",
+    value_column="score",
+) -> pd.DataFrame:
+    """Return candidate-level method scores as a DataFrame."""
+    rows = [
+        {
+            candidate_column: candidate,
+            value_column: score,
+        }
+        for candidate, score in enumerate(scores)
+    ]
+    frame = pd.DataFrame(rows)
+    if method is not None:
+        frame.insert(0, "method", str(method))
+    return frame
 
 
 def summarize_vse(
@@ -66,7 +238,7 @@ class VseResults:
 
     @classmethod
     def from_rows(cls, rows: Iterable[dict] | pd.DataFrame | "VseResults") -> "VseResults":
-        return cls(rows_to_dataframe(rows))
+        return cls(to_dataframe(rows))
 
     @classmethod
     def from_csv(cls, path) -> "VseResults":
@@ -81,6 +253,16 @@ class VseResults:
 
     def __len__(self) -> int:
         return len(self.frame)
+
+    @property
+    def dataframe(self) -> pd.DataFrame:
+        """Return the backing DataFrame for fluent notebook work."""
+        return self.frame
+
+    @property
+    def df(self) -> pd.DataFrame:
+        """Alias for ``dataframe``."""
+        return self.frame
 
     def to_dataframe(self, copy=True) -> pd.DataFrame:
         return self.frame.copy() if copy else self.frame
@@ -185,7 +367,13 @@ class VseResults:
 __all__ = [
     "DEFAULT_GROUP_BY",
     "VseResults",
+    "ballots_from_dataframe",
+    "ballots_to_dataframe",
     "read_results_csv",
     "rows_to_dataframe",
+    "scores_to_dataframe",
     "summarize_vse",
+    "to_dataframe",
+    "voter_to_dataframe",
+    "voters_to_dataframe",
 ]

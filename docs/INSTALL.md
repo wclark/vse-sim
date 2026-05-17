@@ -43,6 +43,14 @@ imported an older copy.
 
 ## Basic Notebook Example
 
+For serious notebook work, start from the pasteable
+[Jupyter notebook template](./JUPYTER_EXAMPLES.md). It has one setup cell with
+imports, reusable helpers, reporting functions, and plotting functions, followed
+by one larger experiment cell that runs a DataFrame-centric simulation and
+builds tables and charts.
+
+The minimal shape is:
+
 ```python
 import vse_sim as vse
 from vse_sim import Mav, PolyaModel, Score, baseRuns, medianRuns
@@ -59,14 +67,33 @@ results = vse.run_simulation(
     seed="notebook-demo",
 )
 
-results.frame.head()
+results.df.head()
 ```
 
 Summarize and plot results directly:
 
 ```python
+frame = results.dataframe
 summary = results.summarize(group_by="method")
 axes = results.plot_vse(group_by="method", kind="barh")
+```
+
+Get DataFrames directly from common VSE objects:
+
+```python
+frame = vse.run_simulation_dataframe(
+    PolyaModel(),
+    [[Score(), baseRuns]],
+    nvot=5,
+    ncand=4,
+    niter=3,
+    seed="notebook-frame",
+)
+
+voters = PolyaModel()(5, 4)
+voter_utilities = voters.to_dataframe(wide=True)
+ballots = Score().ballots_dataframe(voters)
+scores = Score().results_dataframe(ballots)
 ```
 
 Write the result DataFrame in the notebook working directory:
@@ -75,9 +102,8 @@ Write the result DataFrame in the notebook working directory:
 results.to_csv("notebook-results.csv")
 ```
 
-For a full notebook cookbook with copy-paste examples covering voter models,
-methods, strategy choosers, media helpers, CSV output, DataFrames, and
-compatibility checks, see [Jupyter notebook examples](./JUPYTER_EXAMPLES.md).
+The full template also shows summary styling, method-by-chooser heatmaps,
+boxplots, raw result filtering, candidate score tables, and CSV round-tripping.
 
 ## Python Script Example
 
