@@ -41,8 +41,8 @@ python -m pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@main"
 Prefer the modern `vse_sim` namespace for new code:
 
 ```python
-from debugDump import setDebug
 from vse_sim import CsvBatch, Mav, PolyaModel, Score, baseRuns, medianRuns
+from vse_sim.debug_dump import setDebug
 
 setDebug(False)
 
@@ -56,6 +56,13 @@ csvs = CsvBatch(
 )
 
 len(csvs.rows)
+```
+
+Work with results as a pandas DataFrame:
+
+```python
+results = csvs.to_dataframe()
+summary = csvs.summarize(group_by="method")
 ```
 
 Write CSV output to the current working directory:

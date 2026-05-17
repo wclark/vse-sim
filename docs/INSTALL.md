@@ -44,8 +44,8 @@ imported an older copy.
 ## Basic Notebook Example
 
 ```python
-from debugDump import setDebug
 from vse_sim import CsvBatch, Mav, PolyaModel, Score, baseRuns, medianRuns
+from vse_sim.debug_dump import setDebug
 
 setDebug(False)
 
@@ -67,15 +67,22 @@ Save CSV output in the notebook working directory:
 csvs.saveFile("notebook-results")
 ```
 
+Use DataFrames for notebook analysis:
+
+```python
+results = csvs.to_dataframe()
+summary = csvs.summarize(group_by="method")
+```
+
 For a full notebook cookbook with copy-paste examples covering voter models,
-methods, strategy choosers, media helpers, CSV output, and compatibility
-checks, see [Jupyter notebook examples](./JUPYTER_EXAMPLES.md).
+methods, strategy choosers, media helpers, CSV output, DataFrames, and
+compatibility checks, see [Jupyter notebook examples](./JUPYTER_EXAMPLES.md).
 
 ## Python Script Example
 
 ```python
-from debugDump import setDebug
 from vse_sim import CsvBatch, Mav, PolyaModel, Score, baseRuns, medianRuns
+from vse_sim.debug_dump import setDebug
 
 
 def main() -> None:
