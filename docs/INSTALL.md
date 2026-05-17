@@ -15,7 +15,7 @@ python -m pip install vse-sim
 Pin a known release when you need a reproducible environment:
 
 ```shell
-python -m pip install "vse-sim==0.1.0"
+python -m pip install "vse-sim==0.1.1"
 ```
 
 Upgrade an existing environment:
@@ -35,7 +35,7 @@ Inside notebooks, prefer `%pip` so the package installs into the active kernel:
 For reproducible notebooks:
 
 ```python
-%pip install "vse-sim==0.1.0"
+%pip install "vse-sim==0.1.1"
 ```
 
 Restart the kernel after installing or upgrading if the notebook already
@@ -44,12 +44,13 @@ imported an older copy.
 ## Basic Notebook Example
 
 ```python
-from vse_sim import CsvBatch, Mav, PolyaModel, Score, baseRuns, medianRuns
+import vse_sim as vse
+from vse_sim import Mav, PolyaModel, Score, baseRuns, medianRuns
 from vse_sim.debug_dump import setDebug
 
 setDebug(False)
 
-csvs = CsvBatch(
+results = vse.run_simulation(
     PolyaModel(),
     [[Score(), baseRuns], [Mav(), medianRuns]],
     nvot=5,
@@ -58,20 +59,20 @@ csvs = CsvBatch(
     seed="notebook-demo",
 )
 
-len(csvs.rows)
+results.frame.head()
 ```
 
-Save CSV output in the notebook working directory:
+Summarize and plot results directly:
 
 ```python
-csvs.saveFile("notebook-results")
+summary = results.summarize(group_by="method")
+axes = results.plot_vse(group_by="method", kind="barh")
 ```
 
-Use DataFrames for notebook analysis:
+Write the result DataFrame in the notebook working directory:
 
 ```python
-results = csvs.to_dataframe()
-summary = csvs.summarize(group_by="method")
+results.to_csv("notebook-results.csv")
 ```
 
 For a full notebook cookbook with copy-paste examples covering voter models,
@@ -81,13 +82,14 @@ compatibility checks, see [Jupyter notebook examples](./JUPYTER_EXAMPLES.md).
 ## Python Script Example
 
 ```python
-from vse_sim import CsvBatch, Mav, PolyaModel, Score, baseRuns, medianRuns
+import vse_sim as vse
+from vse_sim import Mav, PolyaModel, Score, baseRuns, medianRuns
 from vse_sim.debug_dump import setDebug
 
 
 def main() -> None:
     setDebug(False)
-    csvs = CsvBatch(
+    results = vse.run_simulation(
         PolyaModel(),
         [[Score(), baseRuns], [Mav(), medianRuns]],
         nvot=5,
@@ -95,7 +97,7 @@ def main() -> None:
         niter=3,
         seed="script-demo",
     )
-    csvs.saveFile("script-results")
+    results.to_csv("script-results.csv")
 
 
 if __name__ == "__main__":
@@ -125,7 +127,7 @@ python -m pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@main"
 Install a specific branch, tag, or commit by replacing `main`:
 
 ```shell
-python -m pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@v0.1.0"
+python -m pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@v0.1.1"
 python -m pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@<branch-name>"
 python -m pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@<commit-sha>"
 ```

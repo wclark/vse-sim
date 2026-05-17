@@ -24,10 +24,10 @@ In a notebook, use `%pip` so the package is installed into the active kernel:
 %pip install vse-sim
 ```
 
-For reproducible notebooks or environments, pin a version:
+For reproducible notebooks or environments, pin a released version:
 
 ```shell
-python -m pip install "vse-sim==0.1.0"
+python -m pip install "vse-sim==0.1.1"
 ```
 
 To install the latest code from GitHub instead of PyPI:
@@ -41,10 +41,38 @@ python -m pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@main"
 Prefer the modern `vse_sim` namespace for new code:
 
 ```python
-from vse_sim import CsvBatch, Mav, PolyaModel, Score, baseRuns, medianRuns
+import vse_sim as vse
+from vse_sim import Mav, PolyaModel, Score, baseRuns, medianRuns
 from vse_sim.debug_dump import setDebug
 
 setDebug(False)
+
+results = vse.run_simulation(
+    PolyaModel(),
+    [[Score(), baseRuns], [Mav(), medianRuns]],
+    nvot=5,
+    ncand=4,
+    niter=3,
+    seed="quickstart",
+)
+
+results.frame.head()
+```
+
+Work with results using pandas-native helpers:
+
+```python
+summary = results.summarize(group_by="method")
+leaderboard = results.leaderboard()
+report_tables = results.report()
+axes = results.plot_vse(group_by="method", kind="barh")
+```
+
+`CsvBatch` remains available when you want the legacy batch object or metadata
+CSV writer:
+
+```python
+from vse_sim import CsvBatch
 
 csvs = CsvBatch(
     PolyaModel(),
@@ -54,20 +82,6 @@ csvs = CsvBatch(
     niter=3,
     seed="quickstart",
 )
-
-len(csvs.rows)
-```
-
-Work with results as a pandas DataFrame:
-
-```python
-results = csvs.to_dataframe()
-summary = csvs.summarize(group_by="method")
-```
-
-Write CSV output to the current working directory:
-
-```python
 csvs.saveFile("quickstart-results")
 ```
 

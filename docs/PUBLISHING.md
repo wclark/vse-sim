@@ -7,7 +7,7 @@ PyPI API token is stored in the repository.
 
 - Distribution name: `vse-sim`
 - Import namespace: `vse_sim`
-- Current public version: `0.1.0`
+- Current package version: `0.1.1`
 - PyPI: <https://pypi.org/project/vse-sim/>
 - GitHub releases: <https://github.com/wclark/vse-sim/releases>
 - Publish workflow: `.github/workflows/python-publish.yml`
@@ -39,7 +39,7 @@ PyPI API token is stored in the repository.
 ## Publishing
 
 Publish by creating a GitHub release whose tag matches the package version with
-a leading `v`, for example `v0.1.0`.
+a leading `v`, for example `v0.1.1`.
 
 The release workflow runs when a GitHub release is published. It:
 
@@ -62,7 +62,7 @@ Run a clean install smoke test:
 ```shell
 python -m venv .package-smoke
 .package-smoke/Scripts/python -m pip install --upgrade pip
-.package-smoke/Scripts/python -m pip install "vse-sim==0.1.0"
+.package-smoke/Scripts/python -m pip install "vse-sim==0.1.1"
 .package-smoke/Scripts/python -m pip check
 ```
 
