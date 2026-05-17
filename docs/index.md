@@ -7,7 +7,8 @@ layout: default
 > Install it with `python -m pip install vse-sim` or `%pip install vse-sim`
 > in Jupyter. See [installation and notebook usage](./INSTALL.md) and the
 > [Jupyter notebook template](./JUPYTER_EXAMPLES.md) for a DataFrame-centric
-> setup cell, larger simulation example, report tables, and plots.
+> setup cell, larger simulation example, report tables, and plots. See the
+> [generated API reference](./api/vse_sim.html) for package-level details.
 
 ## This document looks long. Is there a shorter version?
 

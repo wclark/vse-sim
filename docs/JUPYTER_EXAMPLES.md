@@ -9,6 +9,9 @@ without hand-building `pd.DataFrame(...)` objects.
 The original legacy imports, such as `from vse import CsvBatch`, are still
 available for older scripts. New notebooks should use `vse_sim`.
 
+For function and class details while experimenting, keep the
+[generated API reference](./api/vse_sim.html) open beside the notebook.
+
 ## Install In The Active Kernel
 
 Use `%pip` in notebooks so the package installs into the active kernel.

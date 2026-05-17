@@ -15,7 +15,7 @@ python -m pip install vse-sim
 Pin a known release when you need a reproducible environment:
 
 ```shell
-python -m pip install "vse-sim==0.1.4"
+python -m pip install "vse-sim==0.1.5"
 ```
 
 Upgrade an existing environment:
@@ -35,7 +35,7 @@ Inside notebooks, prefer `%pip` so the package installs into the active kernel:
 For reproducible notebooks:
 
 ```python
-%pip install "vse-sim==0.1.4"
+%pip install "vse-sim==0.1.5"
 ```
 
 Restart the kernel after installing or upgrading if the notebook already
@@ -105,6 +105,20 @@ results.to_csv("notebook-results.csv")
 The full template also shows summary styling, method-by-chooser heatmaps,
 boxplots, raw result filtering, candidate score tables, and CSV round-tripping.
 
+## API Reference
+
+The generated API reference is published with the documentation site:
+
+- [Modern `vse_sim` package API](./api/vse_sim.html)
+
+Build or check it locally from a repository checkout:
+
+```shell
+python -m pip install -e ".[docs]"
+python tools/build_api_docs.py
+python tools/build_api_docs.py --check
+```
+
 ## Python Script Example
 
 ```python
@@ -153,7 +167,7 @@ python -m pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@main"
 Install a specific branch, tag, or commit by replacing `main`:
 
 ```shell
-python -m pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@v0.1.4"
+python -m pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@v0.1.5"
 python -m pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@<branch-name>"
 python -m pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@<commit-sha>"
 ```

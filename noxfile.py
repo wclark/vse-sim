@@ -5,7 +5,7 @@ from pathlib import Path
 
 import nox
 
-nox.options.sessions = ["lint", "tests-3.10", "build", "audit"]
+nox.options.sessions = ["lint", "docs", "tests-3.10", "build", "audit"]
 
 PYTHON_VERSIONS = ["3.10", "3.12"]
 
@@ -39,6 +39,12 @@ def lint(session: nox.Session) -> None:
     session.run("python", "-m", "ruff", "format", "--check", ".")
     session.run("python", "-m", "ruff", "check", ".")
     session.run("validate-pyproject", "pyproject.toml")
+
+
+@nox.session(python="3.12")
+def docs(session: nox.Session) -> None:
+    session.install("-e", ".[docs]")
+    session.run("python", "tools/build_api_docs.py", "--check")
 
 
 @nox.session(python="3.10")
