@@ -4,6 +4,7 @@ from numpy import argsort, percentile, sign
 
 from .compat import as_builtin_scalar, floor, mean
 from .data_classes import CandidateWithCount, Method, rememberBallot, rememberBallots
+from .dataframe import ballots_from_dataframe
 from .voter_models import DeterministicModel, Voter  # noqa: F401 - used by doctests
 
 
@@ -296,6 +297,7 @@ def Srv(topRank=10):
 
         def results(self, ballots, **kwargs):
             """Srv results."""
+            ballots = ballots_from_dataframe(ballots)
             baseResults = super(Srv0to, self).results(ballots, **kwargs)
             (runnerUp, top) = sorted(range(len(baseResults)), key=lambda i: baseResults[i])[-2:]
             upset = sum(sign(ballot[runnerUp] - ballot[top]) for ballot in ballots)
@@ -602,8 +604,7 @@ class Irv(Method):
         >>> Irv().results([[0,1,2]] * 4 + [[2,1,0]] * 3 + [[1,2,0]] * 2)
         [2, 0, 1]
         """
-        if type(ballots) is not list:
-            ballots = list(ballots)
+        ballots = ballots_from_dataframe(ballots)
         return self.runIrv(self.buildPreferenceSchedule(ballots), len(ballots[0]))
 
     @staticmethod  # cls is provided explicitly, not through binding
@@ -709,8 +710,7 @@ class IrvPrime(Irv):
         [1, 0, 2]
         """
 
-        if type(ballots) is not list:
-            ballots = list(ballots)
+        ballots = ballots_from_dataframe(ballots)
 
         remaining = self.buildPreferenceSchedule(ballots)
         ncand = len(self.candidateVotes(remaining))
@@ -781,6 +781,7 @@ class V321(Mav):
         >>> V321().results([[1,0,2,1]]*29 + [[0,2,1,1]]*30 + [[2,1,0,1]]*31 + [[1,1,1,2]]*10)
         [3.375, 2.875, 0.25, 0]
         """
+        ballots = ballots_from_dataframe(ballots)
         candScores = list(zip(*ballots))
         n2s = [sum(1 if s > 1 else 0 for s in c) for c in candScores]
         o2s = argsort(n2s)  # order
@@ -981,6 +982,7 @@ class Schulze(RankedMethod):
         >>> Schulze.extraEvents
         {'scenario': 'spoiler'}
         """
+        ballots = ballots_from_dataframe(ballots)
         n = len(ballots[0])
         cmat = [[0 for _ in range(n)] for _ in range(n)]
         numWins = [0] * n
@@ -1094,6 +1096,7 @@ class IRNR(RankedMethod):
     stratTargetFor = Method.stratTarget3  # strategize in favor of third place, because second place is pointless (can't change pairwise)
 
     def results(self, ballots, **kwargs):
+        ballots = ballots_from_dataframe(ballots)
         enabled = [True] * len(ballots[0])
         numEnabled = sum(enabled)
         results = [None] * len(enabled)

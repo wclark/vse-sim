@@ -76,11 +76,13 @@ from vse_sim import (
     medianRuns,
     orderOf,
     read_results_csv,
-    rows_to_dataframe,
+    scores_to_dataframe,
     skewedMediaFor,
     summarize_vse,
+    to_dataframe,
     topNMediaFor,
     truth,
+    voters_to_dataframe,
 )
 
 setDebug(False)
@@ -101,19 +103,14 @@ toy_voters = Electorate(
     ]
 )
 
-pd.DataFrame(
-    toy_voters,
-    columns=["candidate_0", "candidate_1", "candidate_2"],
-).assign(voter=range(len(toy_voters))).set_index("voter")
+toy_voters.to_dataframe(wide=True).set_index("voter")
 ```
 
 ```python
-pd.DataFrame(
-    {
-        "candidate": range(len(toy_voters.socUtils)),
-        "social_utility": toy_voters.socUtils,
-    }
-).sort_values("social_utility", ascending=False)
+scores_to_dataframe(toy_voters.socUtils, value_column="social_utility").sort_values(
+    "social_utility",
+    ascending=False,
+)
 ```
 
 Random voters are useful for quick exploratory cells.
@@ -124,12 +121,8 @@ random.seed(10)
 sample_voter = Voter.rand(4)
 mutated_voter = sample_voter.mutantChild(0.2)
 
-pd.DataFrame(
-    {
-        "candidate": range(4),
-        "sample_voter": sample_voter,
-        "mutated_voter": mutated_voter,
-    }
+voters_to_dataframe([sample_voter, mutated_voter], wide=True).assign(
+    label=["sample_voter", "mutated_voter"]
 )
 ```
 
@@ -166,7 +159,7 @@ for label, model, nvot, ncand in model_specs:
             }
         )
 
-model_frame = pd.DataFrame(model_rows)
+model_frame = to_dataframe(model_rows)
 model_frame.pivot_table(
     index=["label", "model"],
     columns="candidate",
@@ -195,7 +188,7 @@ quick_results = vse.run_simulation(
     seed="notebook-quickstart",
 )
 
-quick_results.frame.head()
+quick_results.df.head()
 ```
 
 `VseResults.summarize()` returns a DataFrame grouped by method and chooser.
@@ -230,11 +223,11 @@ The same summary helper also works with plain row dictionaries or existing
 DataFrames.
 
 ```python
-summarize_vse(quick_results.frame, group_by="method")
+summarize_vse(quick_results.df, group_by="method")
 ```
 
 ```python
-rows_to_dataframe(quick_results).head()
+to_dataframe(quick_results).head()
 ```
 
 Plots are built from the same summary tables and return matplotlib axes.
@@ -255,7 +248,7 @@ with TemporaryDirectory() as tmpdir:
 
     saved_results = read_results_csv(saved_path)
 
-saved_results.frame.head()
+saved_results.df.head()
 ```
 
 `CsvBatch` is still available when you want the legacy object or its metadata
@@ -298,7 +291,7 @@ all_method_summary.sort_values("mean_vse", ascending=False)
 The built-in suites are ordinary lists, so you can inspect and reuse them.
 
 ```python
-pd.DataFrame(
+to_dataframe(
     {
         "suite": ["baseRuns", "medianRuns", "allSystems", "markMethods"],
         "entries": [len(baseRuns), len(medianRuns), len(allSystems), len(markMethods)],
@@ -307,7 +300,7 @@ pd.DataFrame(
 ```
 
 ```python
-pd.DataFrame(
+to_dataframe(
     {
         "method": [str(method) for method, _choosers in markMethods],
         "chooser_count": [len(choosers) for _method, choosers in markMethods],
@@ -318,14 +311,9 @@ pd.DataFrame(
 ## Direct Method Experiments
 
 For most notebook work, use `vse.run_simulation(...)`. When you want to inspect
-ballots and raw method scores, call a method's honest ballot factory directly.
+ballots and raw method scores, use the DataFrame helpers on method objects.
 
 ```python
-def honest_ballots(method, voters):
-    ballot_factory = method.honBallotFor(voters)
-    return [ballot_factory(method.__class__, voter) for voter in voters]
-
-
 direct_methods = [
     Score(),
     Score(1),
@@ -344,38 +332,25 @@ direct_methods = [
 ]
 
 random.seed(2)
-direct_rows = []
+direct_frames = []
 
 for method in direct_methods:
     if isinstance(method, V321):
         V321.extraEvents = {}
 
-    ballots = honest_ballots(method, toy_voters)
-    results = method.results(ballots, isHonest=True)
+    ballots = method.ballots_dataframe(toy_voters)
+    scores = method.results_dataframe(ballots, isHonest=True)
+    winner = method.winner(scores["score"].tolist())
 
-    direct_rows.append(
-        {
-            "method": str(method),
-            "winner": method.winner(results),
-            "ballots": ballots,
-            "results": results,
-        }
-    )
+    direct_frames.append(scores.assign(winner=winner))
 
-direct_frame = pd.DataFrame(direct_rows)
-direct_frame[["method", "winner", "results"]]
+direct_scores = pd.concat(direct_frames, ignore_index=True)
+direct_scores.head()
 ```
 
-Explode list-valued results into a candidate-by-method table.
+Pivot candidate scores into a candidate-by-method table.
 
 ```python
-direct_scores = (
-    direct_frame[["method", "results"]]
-    .explode("results")
-    .assign(candidate=lambda frame: frame.groupby("method").cumcount())
-    .rename(columns={"results": "score"})
-)
-
 direct_scores.pivot(index="method", columns="candidate", values="score")
 ```
 
@@ -394,7 +369,7 @@ chooser_examples = [
     LazyChooser(),
 ]
 
-pd.DataFrame(
+to_dataframe(
     {
         "chooser": [chooser.getName() for chooser in chooser_examples],
         "class": [chooser.__class__.__name__ for chooser in chooser_examples],
@@ -422,7 +397,7 @@ strategy_results = vse.run_simulation(
     seed="strategy-media",
 )
 
-strategy_results.frame[["method", "chooser", "vse"]].head(12)
+strategy_results.df[["method", "chooser", "vse"]].head(12)
 ```
 
 ```python
@@ -433,9 +408,9 @@ Tally columns are present only when a chooser records tally information, so
 reshape them after filtering for rows that have a tally.
 
 ```python
-tally_columns = [column for column in strategy_results.frame.columns if column.startswith("tally")]
+tally_columns = [column for column in strategy_results.df.columns if column.startswith("tally")]
 
-strategy_results.frame.dropna(subset=["tallyName0"])[
+strategy_results.df.dropna(subset=["tallyName0"])[
     ["method", "chooser", *tally_columns]
 ].head()
 ```
@@ -450,7 +425,7 @@ standings = [10, 8, 6, 2]
 tally = defaultdict(int)
 random.seed(9)
 
-media_frame = pd.DataFrame(
+media_frame = to_dataframe(
     {
         "candidate": range(len(standings)),
         "truth": truth(standings),
@@ -465,7 +440,7 @@ media_frame
 ```
 
 ```python
-pd.DataFrame(
+to_dataframe(
     {
         "candidate_order": [orderOf(standings)],
         "bias_scale": [biaserAround(1)(standings)],
@@ -550,7 +525,7 @@ from methods import Score as LegacyScore
 from voterModels import PolyaModel as LegacyPolyaModel
 from vse import CsvBatch as LegacyCsvBatch
 
-pd.DataFrame(
+to_dataframe(
     {
         "object": ["CsvBatch", "Score", "PolyaModel"],
         "modern_module": [

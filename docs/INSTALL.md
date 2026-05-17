@@ -59,14 +59,33 @@ results = vse.run_simulation(
     seed="notebook-demo",
 )
 
-results.frame.head()
+results.df.head()
 ```
 
 Summarize and plot results directly:
 
 ```python
+frame = results.dataframe
 summary = results.summarize(group_by="method")
 axes = results.plot_vse(group_by="method", kind="barh")
+```
+
+Get DataFrames directly from common VSE objects:
+
+```python
+frame = vse.run_simulation_dataframe(
+    PolyaModel(),
+    [[Score(), baseRuns]],
+    nvot=5,
+    ncand=4,
+    niter=3,
+    seed="notebook-frame",
+)
+
+voters = PolyaModel()(5, 4)
+voter_utilities = voters.to_dataframe(wide=True)
+ballots = Score().ballots_dataframe(voters)
+scores = Score().results_dataframe(ballots)
 ```
 
 Write the result DataFrame in the notebook working directory:

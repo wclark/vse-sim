@@ -15,11 +15,14 @@ def test_modern_package_exports_match_legacy_modules():
     assert vse_sim.PolyaModel is voterModels.PolyaModel
     assert vse_sim.baseRuns is vse.baseRuns
     assert vse_sim.rows_to_dataframe.__module__ == "vse_sim.dataframe"
+    assert vse_sim.to_dataframe.__module__ == "vse_sim.dataframe"
     assert vse_sim.CsvBatch.__module__ == "vse_sim.simulation"
     assert vse_sim.Score().__class__.__module__ == "vse_sim.methods"
     assert vse_sim.PolyaModel.__module__ == "vse_sim.voter_models"
     assert "VseResults" in vse_sim.__all__
+    assert "to_dataframe" in vse_sim.__all__
     assert "run_simulation" in vse_sim.__all__
+    assert "run_simulation_dataframe" in vse_sim.__all__
     assert "CsvBatch" in vse_sim.__all__
 
 
@@ -29,7 +32,7 @@ def test_modern_submodule_imports_match_legacy_modules():
     from stratFunctions import truth as legacy_truth
     from vse_sim.compat import mean
     from vse_sim.data_classes import Method
-    from vse_sim.dataframe import VseResults, rows_to_dataframe
+    from vse_sim.dataframe import VseResults, rows_to_dataframe, to_dataframe
     from vse_sim.methods import Score
     from vse_sim.simulation import CsvBatch
     from vse_sim.strategies import truth
@@ -39,6 +42,7 @@ def test_modern_submodule_imports_match_legacy_modules():
     assert Method is LegacyMethod
     assert mean is legacy_mean
     assert rows_to_dataframe is importlib.import_module("vse_sim").rows_to_dataframe
+    assert to_dataframe is importlib.import_module("vse_sim").to_dataframe
     assert VseResults is importlib.import_module("vse_sim").VseResults
     assert PolyaModel is voterModels.PolyaModel
     assert Score is methods.Score

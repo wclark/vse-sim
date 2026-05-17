@@ -56,16 +56,35 @@ results = vse.run_simulation(
     seed="quickstart",
 )
 
-results.frame.head()
+results.df.head()
 ```
 
-Work with results using pandas-native helpers:
+Work with results using pandas-native helpers and DataFrame aliases:
 
 ```python
+frame = results.dataframe
 summary = results.summarize(group_by="method")
 leaderboard = results.leaderboard()
 report_tables = results.report()
 axes = results.plot_vse(group_by="method", kind="barh")
+```
+
+Use the convenience helpers when you want DataFrames directly:
+
+```python
+frame = vse.run_simulation_dataframe(
+    PolyaModel(),
+    [[Score(), baseRuns]],
+    nvot=5,
+    ncand=4,
+    niter=3,
+    seed="quickstart-frame",
+)
+
+voters = PolyaModel()(5, 4)
+voter_utilities = voters.to_dataframe(wide=True)
+ballots = Score().ballots_dataframe(voters)
+scores = Score().results_dataframe(ballots)
 ```
 
 `CsvBatch` remains available when you want the legacy batch object or metadata

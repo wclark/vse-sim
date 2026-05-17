@@ -12,6 +12,16 @@ class Voter(tuple):
     def __new__(cls, utils=()):
         return super().__new__(cls, (as_builtin_scalar(util) for util in utils))
 
+    @property
+    def dataframe(self):
+        """Return this voter's candidate utilities as a tidy DataFrame."""
+        return self.to_dataframe()
+
+    @property
+    def df(self):
+        """Alias for ``dataframe``."""
+        return self.dataframe
+
     @classmethod
     def rand(cls, ncand):
         """Create a random voter with an independent standard normal
@@ -63,6 +73,12 @@ class Voter(tuple):
         This version is a stub, since this voter class has no attrs."""
         return self.__class__(utils)
 
+    def to_dataframe(self, voter_id=None, **kwargs):
+        """Return this voter's candidate utilities as a tidy DataFrame."""
+        from .dataframe import voter_to_dataframe
+
+        return voter_to_dataframe(self, voter_id=voter_id, **kwargs)
+
     def mutantChild(self, muteWeight):
         """Returns a copy hybridized with a random voter of weight muteWeight.
 
@@ -108,6 +124,21 @@ class Electorate(list):
     """A list of voters.
     Each voter is a list of candidate utilities"""
 
+    @property
+    def dataframe(self):
+        """Return voter utilities as a tidy DataFrame."""
+        return self.to_dataframe()
+
+    @property
+    def df(self):
+        """Alias for ``dataframe``."""
+        return self.dataframe
+
+    @property
+    def wide_dataframe(self):
+        """Return one row per voter with one utility column per candidate."""
+        return self.to_dataframe(wide=True)
+
     @cached_property
     def socUtils(self):
         """Return mean utility across electorate for each candidate: their social utilities.
@@ -117,6 +148,12 @@ class Electorate(list):
         [2.0, 3.0]
         """
         return list(map(mean, zip(*self)))
+
+    def to_dataframe(self, wide=False, **kwargs):
+        """Return voter utilities as a tidy or wide DataFrame."""
+        from .dataframe import voters_to_dataframe
+
+        return voters_to_dataframe(self, wide=wide, **kwargs)
 
 
 class RandomModel:
@@ -132,6 +169,10 @@ class RandomModel:
 
     def __call__(self, nvot, ncand, vType=PersonalityVoter):
         return Electorate(vType.rand(ncand) for _ in range(nvot))
+
+    def to_dataframe(self, nvot, ncand, vType=PersonalityVoter, wide=False, **kwargs):
+        """Generate an electorate and return its utilities as a DataFrame."""
+        return self(nvot, ncand, vType=vType).to_dataframe(wide=wide, **kwargs)
 
 
 class DeterministicModel(RandomModel):

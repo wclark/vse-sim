@@ -114,9 +114,42 @@ class Method:
 
         Test for subclasses, makes no sense to test this method in the abstract base class.
         """
-        if type(ballots) is not list:
-            ballots = list(ballots)
+        from .dataframe import ballots_from_dataframe
+
+        ballots = ballots_from_dataframe(ballots)
         return list(map(self.candScore, zip(*ballots)))
+
+    def honest_ballots(self, voters):
+        """Return honest ballots for voters as method-ready lists."""
+        sentinel = object()
+        previous_cuts = getattr(self.__class__, "specificCuts", sentinel)
+        try:
+            ballot_factory = self.honBallotFor(voters)
+            return [ballot_factory(self.__class__, voter) for voter in voters]
+        finally:
+            if previous_cuts is sentinel:
+                try:
+                    delattr(self.__class__, "specificCuts")
+                except AttributeError:
+                    pass
+            else:
+                self.__class__.specificCuts = previous_cuts
+
+    def ballots_dataframe(self, voters, wide=False):
+        """Return honest ballots for voters as a tidy or wide DataFrame."""
+        from .dataframe import ballots_to_dataframe
+
+        return ballots_to_dataframe(self.honest_ballots(voters), wide=wide, method=self)
+
+    def results_dataframe(self, ballots, isHonest=False, **kwargs):
+        """Return candidate scores for ballots as a DataFrame."""
+        from .dataframe import scores_to_dataframe
+
+        self.__class__.extraEvents = {}
+        return scores_to_dataframe(
+            self.results(ballots, isHonest=isHonest, **kwargs),
+            method=self,
+        )
 
     @staticmethod  # cls is provided explicitly, not through binding
     def honBallot(cls, utils):
