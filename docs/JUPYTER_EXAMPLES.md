@@ -1,543 +1,286 @@
-# Jupyter Notebook Examples
+# Jupyter Notebook Template
 
-This page is a copy-paste cookbook for using `vse-sim` in a modern notebook.
-The examples use the package namespace, `vse_sim`, and work with pandas
-DataFrames throughout.
+This page is a pasteable notebook template for using `vse-sim` in a
+DataFrame-centric workflow. The goal is to make the library feel natural in a
+modern analysis notebook: run simulations, keep results as DataFrames, build
+summary tables, inspect ballots and candidate scores, and produce useful plots
+without hand-building `pd.DataFrame(...)` objects.
 
 The original legacy imports, such as `from vse import CsvBatch`, are still
 available for older scripts. New notebooks should use `vse_sim`.
 
 ## Install In The Active Kernel
 
-Use `%pip` in notebooks so the package installs into the same Python
-environment as the active kernel.
+Use `%pip` in notebooks so the package installs into the active kernel.
 
 ```python
-%pip install vse-sim
+%pip install --upgrade vse-sim
 ```
 
-Pin a release when you need reproducible notebooks:
+For unreleased DataFrame helper APIs on `main`, install from GitHub until the
+next PyPI release is cut:
 
 ```python
-%pip install "vse-sim==0.1.1"
+%pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@main"
 ```
 
-Restart the kernel after installing or upgrading if you already imported
-`vse_sim`.
+Restart the kernel after installing or upgrading if the notebook already
+imported `vse_sim`.
 
-## Imports
+## Cell 1: Setup, Imports, And Helpers
+
+Paste this cell once near the top of a notebook. It imports the library, defines
+a larger default experiment, and creates reusable helpers for reporting,
+plotting, and direct method-score inspection.
 
 ```python
-from collections import defaultdict
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import random
 
-import vse_sim as vse
+import matplotlib.pyplot as plt
 import pandas as pd
-from vse_sim.debug_dump import setDebug
+import vse_sim as vse
 from vse_sim import (
-    IRNR,
     Borda,
-    BulletyApprovalWith,
-    CsvBatch,
-    DeterministicModel,
-    DimModel,
-    Electorate,
+    IRNR,
     Irv,
-    IrvPrime,
-    KSModel,
-    LazyChooser,
     Mav,
     Mj,
-    OssChooser,
     Plurality,
     PolyaModel,
     ProbChooser,
-    QModel,
     RandomModel,
-    ReverseModel,
-    Rp,
     Schulze,
     Score,
     Srv,
     V321,
-    Voter,
-    VseResults,
-    allSystems,
     baseRuns,
     beHon,
     beStrat,
     beX,
-    biasedMediaFor,
-    biaserAround,
-    fuzzyMediaFor,
-    markMethods,
     medianRuns,
-    orderOf,
     read_results_csv,
-    scores_to_dataframe,
-    skewedMediaFor,
-    summarize_vse,
     to_dataframe,
     topNMediaFor,
-    truth,
-    voters_to_dataframe,
 )
+from vse_sim.debug_dump import setDebug
+
+try:
+    from IPython.display import display
+except ImportError:
+
+    def display(*_objects):
+        return None
+
 
 setDebug(False)
-vse.__version__
-```
+plt.style.use("seaborn-v0_8-whitegrid")
+pd.set_option("display.max_columns", 80)
+pd.set_option("display.width", 140)
 
-## Voters And Electorates
-
-A `Voter` is a tuple of utilities, one utility per candidate. An `Electorate`
-is a list-like collection of voters with aggregate social utilities.
-
-```python
-toy_voters = Electorate(
-    [
-        Voter([3, 1, 2]),
-        Voter([1, 3, 2]),
-        Voter([2, 1, 3]),
-    ]
-)
-
-toy_voters.to_dataframe(wide=True).set_index("voter")
-```
-
-```python
-scores_to_dataframe(toy_voters.socUtils, value_column="social_utility").sort_values(
-    "social_utility",
-    ascending=False,
-)
-```
-
-Random voters are useful for quick exploratory cells.
-
-```python
-random.seed(10)
-
-sample_voter = Voter.rand(4)
-mutated_voter = sample_voter.mutantChild(0.2)
-
-voters_to_dataframe([sample_voter, mutated_voter], wide=True).assign(
-    label=["sample_voter", "mutated_voter"]
-)
-```
-
-## Voter Models
-
-The voter models are callable electorate factories. This example inspects every
-exported voter model directly.
-
-```python
-model_specs = [
-    ("random", RandomModel(), 4, 3),
-    ("reverse", ReverseModel(), 4, 3),
-    ("quality", QModel(), 4, 3),
-    ("polya", PolyaModel(), 5, 3),
-    ("deterministic", DeterministicModel(3), 4, 3),
-    ("dimensional", DimModel(ndims=2), 4, 3),
-    ("hierarchical", KSModel(dccut=0.2, wccut=0.2), 4, 3),
+DEFAULT_SEED = "vse-notebook-template"
+DEFAULT_METHODS = [
+    [Score(), baseRuns],
+    [Score(1), baseRuns],
+    [Srv(2), baseRuns],
+    [Plurality(), baseRuns],
+    [Borda(), baseRuns],
+    [Irv(), baseRuns],
+    [Schulze(), baseRuns],
+    [V321(), baseRuns],
+    [Mav(), medianRuns],
+    [Mj(), medianRuns],
+    [IRNR(), baseRuns],
 ]
+DEFAULT_CONFIG = {
+    "model": PolyaModel(seedVoters=4, alpha=2, mutantFactor=0.25),
+    "methods": DEFAULT_METHODS,
+    "nvot": 101,
+    "ncand": 5,
+    "niter": 24,
+    "media": topNMediaFor(3),
+    "seed": DEFAULT_SEED,
+}
 
-random.seed(7)
-model_rows = []
 
-for label, model, nvot, ncand in model_specs:
-    electorate = model(nvot, ncand)
-    for candidate, utility in enumerate(electorate.socUtils):
-        model_rows.append(
-            {
-                "label": label,
-                "model": str(model),
-                "voters": len(electorate),
-                "candidates": ncand,
-                "candidate": candidate,
-                "social_utility": utility,
-            }
+def run_experiment(**overrides):
+    config = {**DEFAULT_CONFIG, **overrides}
+    random.seed(config["seed"])
+    return vse.run_simulation(**config)
+
+
+def report_tables(results):
+    frame = results.df
+    method_summary = results.summarize(group_by="method")
+    chooser_summary = results.summarize(group_by="chooser")
+    method_chooser = results.summarize(group_by=("method", "chooser"))
+    method_by_chooser = results.pivot(index="method", columns="chooser")
+    return {
+        "results": frame,
+        "method_summary": method_summary,
+        "chooser_summary": chooser_summary,
+        "method_chooser": method_chooser,
+        "method_by_chooser": method_by_chooser,
+        "leaderboard": results.leaderboard(n=12, group_by="method"),
+    }
+
+
+def style_summary(frame, columns=("mean_vse", "median_vse", "min_vse", "max_vse")):
+    visible_columns = [column for column in columns if column in frame.columns]
+    try:
+        return frame.style.format(precision=3).background_gradient(
+            subset=visible_columns,
+            cmap="viridis",
         )
-
-model_frame = to_dataframe(model_rows)
-model_frame.pivot_table(
-    index=["label", "model"],
-    columns="candidate",
-    values="social_utility",
-)
-```
-
-VSE uses the spread between the best candidate and a random winner baseline.
-Perfectly symmetric tiny electorates can make that denominator zero, so use
-`ReverseModel` and small deterministic electorates for direct model inspection,
-or add quality/noise before running VSE batches.
-
-## Quick VSE Batch
-
-`vse.run_simulation(...)` is the DataFrame-first entry point. It repeatedly
-generates electorates, runs the requested voting methods, and returns a
-`VseResults` object.
-
-```python
-quick_results = vse.run_simulation(
-    PolyaModel(),
-    [[Score(), baseRuns], [Mav(), medianRuns]],
-    nvot=5,
-    ncand=4,
-    niter=3,
-    seed="notebook-quickstart",
-)
-
-quick_results.df.head()
-```
-
-`VseResults.summarize()` returns a DataFrame grouped by method and chooser.
-
-```python
-quick_summary = quick_results.summarize()
-quick_summary.sort_values("mean_vse", ascending=False).head(10)
-```
-
-You can group at a different level when you want a compact comparison.
-
-```python
-quick_results.summarize(group_by="method")
-```
-
-Use `leaderboard`, `pivot`, and `report` for common notebook report tables.
-
-```python
-quick_results.leaderboard(n=5, group_by="method")
-```
-
-```python
-quick_results.pivot(index="method", columns="chooser")
-```
-
-```python
-quick_report = quick_results.report()
-quick_report.keys()
-```
-
-The same summary helper also works with plain row dictionaries or existing
-DataFrames.
-
-```python
-summarize_vse(quick_results.df, group_by="method")
-```
-
-```python
-to_dataframe(quick_results).head()
-```
-
-Plots are built from the same summary tables and return matplotlib axes.
-
-```python
-quick_results.plot_vse(group_by="method", kind="barh", title="Quick VSE comparison")
-```
-
-## Save And Reopen CSV Output
-
-`VseResults.to_csv(...)` writes the result DataFrame, and
-`read_results_csv(...)` loads it back into a `VseResults` object.
-
-```python
-with TemporaryDirectory() as tmpdir:
-    saved_path = Path(tmpdir) / "notebook-results.csv"
-    quick_results.to_csv(saved_path)
-
-    saved_results = read_results_csv(saved_path)
-
-saved_results.df.head()
-```
-
-`CsvBatch` is still available when you want the legacy object or its metadata
-CSV writer.
-
-```python
-quick_batch = CsvBatch(
-    PolyaModel(),
-    [[Score(), baseRuns], [Mav(), medianRuns]],
-    nvot=5,
-    ncand=4,
-    niter=3,
-    seed="notebook-quickstart",
-)
-
-with TemporaryDirectory() as tmpdir:
-    legacy_metadata_csv = quick_batch.saveFile(str(Path(tmpdir) / "notebook-results"))
-```
-
-## Run Every Bundled Voting Method
-
-`allSystems` is the broad built-in method suite. This cell runs every bundled
-method once with a tiny electorate.
-
-```python
-all_method_results = vse.run_simulation(
-    RandomModel(),
-    allSystems,
-    nvot=6,
-    ncand=4,
-    niter=1,
-    seed="all-methods",
-)
-
-all_method_summary = all_method_results.summarize(group_by="method")
-
-all_method_summary.sort_values("mean_vse", ascending=False)
-```
-
-The built-in suites are ordinary lists, so you can inspect and reuse them.
-
-```python
-to_dataframe(
-    {
-        "suite": ["baseRuns", "medianRuns", "allSystems", "markMethods"],
-        "entries": [len(baseRuns), len(medianRuns), len(allSystems), len(markMethods)],
-    }
-)
-```
-
-```python
-to_dataframe(
-    {
-        "method": [str(method) for method, _choosers in markMethods],
-        "chooser_count": [len(choosers) for _method, choosers in markMethods],
-    }
-)
-```
-
-## Direct Method Experiments
-
-For most notebook work, use `vse.run_simulation(...)`. When you want to inspect
-ballots and raw method scores, use the DataFrame helpers on method objects.
-
-```python
-direct_methods = [
-    Score(),
-    Score(1),
-    BulletyApprovalWith(0.6),
-    Srv(2),
-    Plurality(),
-    Borda(),
-    Irv(),
-    IrvPrime(),
-    Schulze(),
-    Rp(),
-    V321(),
-    Mav(),
-    Mj(),
-    IRNR(),
-]
-
-random.seed(2)
-direct_frames = []
-
-for method in direct_methods:
-    if isinstance(method, V321):
-        V321.extraEvents = {}
-
-    ballots = method.ballots_dataframe(toy_voters)
-    scores = method.results_dataframe(ballots, isHonest=True)
-    winner = method.winner(scores["score"].tolist())
-
-    direct_frames.append(scores.assign(winner=winner))
-
-direct_scores = pd.concat(direct_frames, ignore_index=True)
-direct_scores.head()
-```
-
-Pivot candidate scores into a candidate-by-method table.
-
-```python
-direct_scores.pivot(index="method", columns="candidate", values="score")
-```
-
-## Strategy Choosers
-
-Choosers select whether each voter casts an honest, strategic, or
-extra-strategic ballot after the method has prepared those options.
-
-```python
-chooser_examples = [
-    beHon,
-    beStrat,
-    beX,
-    ProbChooser([(0.5, beHon), (0.5, beStrat)]),
-    OssChooser(),
-    LazyChooser(),
-]
-
-to_dataframe(
-    {
-        "chooser": [chooser.getName() for chooser in chooser_examples],
-        "class": [chooser.__class__.__name__ for chooser in chooser_examples],
-    }
-)
-```
-
-Use custom chooser lists in the second element of each `[method, choosers]`
-entry. Some methods support extra-strategic ballots and some do not; this
-example uses `beX` with `Mav`, where it is supported.
-
-```python
-custom_runs = [
-    [Score(), [ProbChooser([(0.5, beHon), (0.5, beStrat)]), OssChooser()]],
-    [Mav(), [LazyChooser(), ProbChooser([(0.5, beX), (0.5, beHon)])]],
-]
-
-strategy_results = vse.run_simulation(
-    RandomModel(),
-    custom_runs,
-    nvot=6,
-    ncand=4,
-    niter=2,
-    media=topNMediaFor(2),
-    seed="strategy-media",
-)
-
-strategy_results.df[["method", "chooser", "vse"]].head(12)
-```
-
-```python
-strategy_results.summarize().sort_values(["method", "mean_vse"], ascending=[True, False])
-```
-
-Tally columns are present only when a chooser records tally information, so
-reshape them after filtering for rows that have a tally.
-
-```python
-tally_columns = [column for column in strategy_results.df.columns if column.startswith("tally")]
-
-strategy_results.df.dropna(subset=["tallyName0"])[
-    ["method", "chooser", *tally_columns]
-].head()
-```
-
-## Media Helpers
-
-Media functions transform honest polling results before strategic ballots are
-calculated.
-
-```python
-standings = [10, 8, 6, 2]
-tally = defaultdict(int)
-random.seed(9)
-
-media_frame = to_dataframe(
-    {
-        "candidate": range(len(standings)),
-        "truth": truth(standings),
-        "top_two": topNMediaFor(2)(standings),
-        "fuzzy": fuzzyMediaFor(0.25)(standings, tally),
-        "biased": biasedMediaFor(1, numerator=1)(standings, defaultdict(int)),
-        "skewed": skewedMediaFor(1)(standings, defaultdict(int)),
-    }
-)
-
-media_frame
-```
-
-```python
-to_dataframe(
-    {
-        "candidate_order": [orderOf(standings)],
-        "bias_scale": [biaserAround(1)(standings)],
-        "fuzzy_changed_tally": [dict(tally)],
-    }
-)
-```
-
-Media helpers can be passed directly to `vse.run_simulation(...)`.
-
-```python
-media_batches = []
-
-for label, media in [
-    ("truth", truth),
-    ("top_two", topNMediaFor(2)),
-    ("fuzzy", fuzzyMediaFor(0.25)),
-    ("biased", biasedMediaFor(1, numerator=1)),
-    ("skewed", skewedMediaFor(1)),
-]:
-    results = vse.run_simulation(
-        RandomModel(),
-        [[Score(), baseRuns]],
-        nvot=6,
-        ncand=4,
-        niter=2,
-        media=media,
-        seed=f"media-{label}",
+    except AttributeError:
+        return frame
+
+
+def style_heatmap_table(frame):
+    try:
+        return frame.style.format(precision=3).background_gradient(cmap="viridis")
+    except AttributeError:
+        return frame
+
+
+def plot_heatmap(table, ax=None, title="Mean VSE by method and chooser"):
+    ax = ax or plt.gca()
+    plot_data = table.fillna(0)
+    image = ax.imshow(plot_data, aspect="auto", cmap="viridis")
+    ax.set_title(title)
+    ax.set_xlabel("Chooser")
+    ax.set_ylabel("Method")
+    ax.set_xticks(range(len(plot_data.columns)), labels=plot_data.columns, rotation=45, ha="right")
+    ax.set_yticks(range(len(plot_data.index)), labels=plot_data.index)
+
+    for row_index, method in enumerate(plot_data.index):
+        for column_index, chooser in enumerate(plot_data.columns):
+            value = plot_data.loc[method, chooser]
+            ax.text(column_index, row_index, f"{value:.2f}", ha="center", va="center", fontsize=7)
+
+    plt.colorbar(image, ax=ax, fraction=0.046, pad=0.04)
+    return ax
+
+
+def plot_dashboard(results, tables):
+    frame = tables["results"]
+    method_summary = tables["method_summary"].sort_values("mean_vse", ascending=True)
+    chooser_summary = tables["chooser_summary"].sort_values("mean_vse", ascending=True)
+
+    fig, axes = plt.subplots(2, 2, figsize=(18, 12), constrained_layout=True)
+
+    method_summary.plot.barh(
+        x="method",
+        y="mean_vse",
+        xerr="std_vse",
+        legend=False,
+        ax=axes[0, 0],
+        color="#3f7f93",
     )
-    media_batches.append(results.summarize(group_by="method").assign(media=label))
+    axes[0, 0].set_title("Average VSE by method")
+    axes[0, 0].set_xlabel("Mean VSE")
+    axes[0, 0].set_ylabel("")
 
-pd.concat(media_batches, ignore_index=True)[
-    ["media", "method", "rows", "mean_vse", "min_vse", "max_vse"]
-]
-```
+    plot_heatmap(tables["method_by_chooser"], ax=axes[0, 1])
 
-## Model And Method Batch Matrix
-
-This pattern is useful when you want to exercise a range of working model and
-method combinations without turning the notebook into a long-running study.
-
-```python
-batch_matrix = [
-    ("random", RandomModel(), [[Score(), baseRuns], [Plurality(), baseRuns]]),
-    ("quality", QModel(), [[Score(), baseRuns], [Borda(), baseRuns]]),
-    ("polya", PolyaModel(), [[Score(), baseRuns], [Mav(), medianRuns]]),
-    ("dimensional", DimModel(ndims=2), [[Score(), baseRuns], [Irv(), baseRuns]]),
-    (
-        "hierarchical",
-        KSModel(dccut=0.2, wccut=0.2),
-        [[Score(), baseRuns], [V321(), baseRuns]],
-    ),
-]
-
-matrix_summaries = []
-
-for label, model, methods in batch_matrix:
-    results = vse.run_simulation(
-        model,
-        methods,
-        nvot=6,
-        ncand=4,
-        niter=2,
-        seed=f"matrix-{label}",
+    chooser_summary.plot.barh(
+        x="chooser",
+        y="mean_vse",
+        legend=False,
+        ax=axes[1, 0],
+        color="#855c75",
     )
-    matrix_summaries.append(results.summarize(group_by="method").assign(model=label))
+    axes[1, 0].set_title("Average VSE by strategy chooser")
+    axes[1, 0].set_xlabel("Mean VSE")
+    axes[1, 0].set_ylabel("")
 
-batch_matrix_summary = pd.concat(matrix_summaries, ignore_index=True)
-batch_matrix_summary[["model", "method", "rows", "mean_vse"]].sort_values(
-    ["model", "mean_vse"],
-    ascending=[True, False],
-)
+    frame.boxplot(column="vse", by="method", ax=axes[1, 1], rot=45, grid=False)
+    axes[1, 1].set_title("VSE distribution by method")
+    axes[1, 1].set_xlabel("")
+    axes[1, 1].set_ylabel("VSE")
+    fig.suptitle("")
+    return fig
+
+
+def inspect_one_electorate(model=None, methods=None, nvot=21, ncand=5, seed=DEFAULT_SEED):
+    random.seed(seed)
+    model = model or DEFAULT_CONFIG["model"]
+    methods = methods or DEFAULT_METHODS[:5]
+    voters = model(nvot, ncand)
+
+    ballot_frames = []
+    score_frames = []
+    for method, _choosers in methods:
+        ballots = method.ballots_dataframe(voters)
+        scores = method.results_dataframe(ballots, isHonest=True)
+        winner = method.winner(scores["score"].tolist())
+        ballot_frames.append(ballots.assign(method=str(method)))
+        score_frames.append(scores.assign(winner=winner))
+
+    return {
+        "voters": voters,
+        "voter_utilities": voters.to_dataframe(wide=True),
+        "ballots": pd.concat(ballot_frames, ignore_index=True),
+        "scores": pd.concat(score_frames, ignore_index=True),
+    }
+
+
+def save_and_reload(results, filename="vse-results.csv"):
+    with TemporaryDirectory() as tmpdir:
+        path = Path(tmpdir) / filename
+        results.to_csv(path)
+        return read_results_csv(path)
 ```
 
-## Legacy Compatibility Check
+## Cell 2: Run A Larger Simulation And Build A Report
 
-These imports remain supported for older scripts, but new notebook code should
-prefer `vse_sim`.
+Paste this cell after the setup cell. It runs a larger simulation than the tiny
+smoke examples, displays DataFrame reports, creates a dashboard, and inspects
+candidate-level scoring from one sampled electorate.
 
 ```python
-from methods import Score as LegacyScore
-from voterModels import PolyaModel as LegacyPolyaModel
-from vse import CsvBatch as LegacyCsvBatch
+results = run_experiment()
+tables = report_tables(results)
+detail = inspect_one_electorate()
+reloaded_results = save_and_reload(results)
 
-to_dataframe(
-    {
-        "object": ["CsvBatch", "Score", "PolyaModel"],
-        "modern_module": [
-            CsvBatch.__module__,
-            Score().__class__.__module__,
-            PolyaModel.__module__,
-        ],
-        "legacy_same_object": [
-            LegacyCsvBatch is CsvBatch,
-            LegacyScore is Score,
-            LegacyPolyaModel is PolyaModel,
-        ],
-    }
-)
+print(f"vse-sim version: {vse.__version__}")
+print(f"simulation rows: {len(results):,}")
+print(f"raw result shape: {results.df.shape}")
+print(f"reloaded result shape: {reloaded_results.df.shape}")
+
+display(results.df.head(12))
+display(style_summary(tables["leaderboard"]))
+display(style_summary(tables["method_chooser"].head(25)))
+display(style_heatmap_table(tables["method_by_chooser"]))
+
+dashboard = plot_dashboard(results, tables)
+plt.show()
+
+display(detail["voter_utilities"].head())
+display(detail["ballots"].head(15))
+display(detail["scores"].pivot(index="method", columns="candidate", values="score"))
 ```
+
+## How To Experiment From Here
+
+The setup cell is meant to be edited. Common changes:
+
+- Increase `DEFAULT_CONFIG["niter"]` when you want smoother estimates.
+- Increase `DEFAULT_CONFIG["nvot"]` for larger electorates.
+- Swap `PolyaModel(...)` for `RandomModel()`, `QModel()`, `DimModel(...)`, or
+  `KSModel(...)` when exploring different electorate assumptions.
+- Add or remove entries in `DEFAULT_METHODS` to focus on a smaller method set.
+- Change `media=topNMediaFor(3)` to `truth` or another media helper when
+  testing strategic-information assumptions.
+- Use `results.df` for row-level filtering and `results.summarize(...)` for
+  grouped reports.
+- Use `method.ballots_dataframe(voters)` and
+  `method.results_dataframe(ballots)` when investigating a single electorate
+  in detail.
+
+For long-running studies, start by increasing `niter` gradually and saving
+outputs with `results.to_csv(...)`. The result CSV can be reloaded later with
+`read_results_csv(...)` and still supports the same `VseResults` summary,
+pivot, report, and plotting helpers.

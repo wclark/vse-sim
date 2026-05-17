@@ -43,6 +43,14 @@ imported an older copy.
 
 ## Basic Notebook Example
 
+For serious notebook work, start from the pasteable
+[Jupyter notebook template](./JUPYTER_EXAMPLES.md). It has one setup cell with
+imports, reusable helpers, reporting functions, and plotting functions, followed
+by one larger experiment cell that runs a DataFrame-centric simulation and
+builds tables and charts.
+
+The minimal shape is:
+
 ```python
 import vse_sim as vse
 from vse_sim import Mav, PolyaModel, Score, baseRuns, medianRuns
@@ -94,9 +102,8 @@ Write the result DataFrame in the notebook working directory:
 results.to_csv("notebook-results.csv")
 ```
 
-For a full notebook cookbook with copy-paste examples covering voter models,
-methods, strategy choosers, media helpers, CSV output, DataFrames, and
-compatibility checks, see [Jupyter notebook examples](./JUPYTER_EXAMPLES.md).
+The full template also shows summary styling, method-by-chooser heatmaps,
+boxplots, raw result filtering, candidate score tables, and CSV round-tripping.
 
 ## Python Script Example
 

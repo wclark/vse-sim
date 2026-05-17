@@ -87,6 +87,12 @@ ballots = Score().ballots_dataframe(voters)
 scores = Score().results_dataframe(ballots)
 ```
 
+For notebook work, the recommended starting point is the copy-paste template in
+[Jupyter notebook template](docs/JUPYTER_EXAMPLES.md). It has one setup cell
+with imports, reusable report helpers, and plotting functions, followed by a
+larger simulation/reporting cell that produces summary tables, a heatmap,
+distribution plots, and method-level scoring tables.
+
 `CsvBatch` remains available when you want the legacy batch object or metadata
 CSV writer:
 
@@ -112,9 +118,7 @@ from voterModels import PolyaModel
 ```
 
 See [Installation and notebook usage](docs/INSTALL.md) for environment setup,
-including GitHub installs and notebook workflow notes. For a broader
-copy-paste cookbook that exercises the package surface from Jupyter, see
-[Jupyter notebook examples](docs/JUPYTER_EXAMPLES.md).
+including GitHub installs and notebook workflow notes.
 
 ## Development
 
