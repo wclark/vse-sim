@@ -5,6 +5,7 @@ write-up and generated report pages. It also contains package-maintainer notes
 that are useful from the repository:
 
 - `INSTALL.md`: PyPI, Jupyter, Python, GitHub, and editable install examples.
+- `JUPYTER_EXAMPLES.md`: copy-paste notebook cookbook and end-user smoke tests.
 - `PUBLISHING.md`: release and PyPI publishing workflow.
 
 Preview the Pages site locally with Jekyll:
