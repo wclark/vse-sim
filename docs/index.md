@@ -5,7 +5,8 @@ layout: default
 
 > Python package note: the simulator is now published as `vse-sim` on PyPI.
 > Install it with `python -m pip install vse-sim` or `%pip install vse-sim`
-> in Jupyter. See [installation and notebook usage](./INSTALL.md) for examples.
+> in Jupyter. See [installation and notebook usage](./INSTALL.md) and the
+> [Jupyter notebook examples](./JUPYTER_EXAMPLES.md) for copy-paste examples.
 
 ## This document looks long. Is there a shorter version?
 

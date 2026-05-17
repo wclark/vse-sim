@@ -67,6 +67,10 @@ Save CSV output in the notebook working directory:
 csvs.saveFile("notebook-results")
 ```
 
+For a full notebook cookbook with copy-paste examples covering voter models,
+methods, strategy choosers, media helpers, CSV output, and compatibility
+checks, see [Jupyter notebook examples](./JUPYTER_EXAMPLES.md).
+
 ## Python Script Example
 
 ```python

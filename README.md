@@ -71,8 +71,10 @@ from vse import CsvBatch
 from voterModels import PolyaModel
 ```
 
-See [Installation and notebook usage](docs/INSTALL.md) for more examples,
-including GitHub installs and notebook workflow notes.
+See [Installation and notebook usage](docs/INSTALL.md) for environment setup,
+including GitHub installs and notebook workflow notes. For a broader
+copy-paste cookbook that exercises the package surface from Jupyter, see
+[Jupyter notebook examples](docs/JUPYTER_EXAMPLES.md).
 
 ## Development
 
