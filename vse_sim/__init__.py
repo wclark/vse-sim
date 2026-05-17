@@ -1,7 +1,8 @@
 """Modern package facade for the VSE simulation library."""
 
-from dataClasses import Method, SideTally, Tallies
-from methods import (
+from .data_classes import Method, SideTally, Tallies
+from .dataframe import rows_to_dataframe, summarize_vse
+from .methods import (
     IRNR,
     V321,
     Borda,
@@ -16,7 +17,8 @@ from methods import (
     Score,
     Srv,
 )
-from stratFunctions import (
+from .simulation import CsvBatch, allSystems, baseRuns, markMethods, medianRuns, uniquify
+from .strategies import (
     Chooser,
     LazyChooser,
     OssChooser,
@@ -32,7 +34,7 @@ from stratFunctions import (
     topNMediaFor,
     truth,
 )
-from voterModels import (
+from .voter_models import (
     DeterministicModel,
     DimElectorate,
     DimModel,
@@ -47,7 +49,6 @@ from voterModels import (
     ReverseModel,
     Voter,
 )
-from vse import CsvBatch, allSystems, baseRuns, markMethods, medianRuns, uniquify
 
 __version__ = "0.1.0"
 
@@ -98,7 +99,9 @@ __all__ = [
     "markMethods",
     "medianRuns",
     "orderOf",
+    "rows_to_dataframe",
     "skewedMediaFor",
+    "summarize_vse",
     "topNMediaFor",
     "truth",
     "uniquify",
