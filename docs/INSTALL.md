@@ -15,7 +15,7 @@ python -m pip install vse-sim
 Pin a known release when you need a reproducible environment:
 
 ```shell
-python -m pip install "vse-sim==0.1.3"
+python -m pip install "vse-sim==0.1.4"
 ```
 
 Upgrade an existing environment:
@@ -35,7 +35,7 @@ Inside notebooks, prefer `%pip` so the package installs into the active kernel:
 For reproducible notebooks:
 
 ```python
-%pip install "vse-sim==0.1.3"
+%pip install "vse-sim==0.1.4"
 ```
 
 Restart the kernel after installing or upgrading if the notebook already
@@ -153,7 +153,7 @@ python -m pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@main"
 Install a specific branch, tag, or commit by replacing `main`:
 
 ```shell
-python -m pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@v0.1.3"
+python -m pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@v0.1.4"
 python -m pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@<branch-name>"
 python -m pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@<commit-sha>"
 ```

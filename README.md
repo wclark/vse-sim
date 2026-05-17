@@ -27,7 +27,7 @@ In a notebook, use `%pip` so the package is installed into the active kernel:
 For reproducible notebooks or environments, pin a released version:
 
 ```shell
-python -m pip install "vse-sim==0.1.3"
+python -m pip install "vse-sim==0.1.4"
 ```
 
 To install the latest code from GitHub instead of PyPI:
