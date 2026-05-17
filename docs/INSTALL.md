@@ -1,41 +1,47 @@
-# Notebook and GitHub Installation
+# Installation and Notebook Usage
 
-This project is packaged as the `vse-sim` distribution and exposes the modern
-`vse_sim` import namespace. The legacy top-level modules are still installed so
-older examples continue to work.
+`vse-sim` is the Python distribution name on PyPI. New code should import from
+the `vse_sim` package namespace. Legacy top-level modules such as `vse`,
+`methods`, and `voterModels` are still installed for compatibility.
 
-## Install From GitHub
+## Install From PyPI
 
-Install the current `main` branch directly from GitHub:
+Install the latest released package:
 
 ```shell
-python -m pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@main"
+python -m pip install vse-sim
 ```
 
-Install a specific branch, tag, or commit by replacing `main`:
+Pin a known release when you need a reproducible environment:
 
 ```shell
-python -m pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@<branch-name>"
-python -m pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@<tag-name>"
-python -m pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@<commit-sha>"
+python -m pip install "vse-sim==0.1.0"
 ```
 
-For local development from a checkout:
+Upgrade an existing environment:
 
 ```shell
-python -m pip install -e ".[dev,publish]"
+python -m pip install --upgrade vse-sim
 ```
 
 ## Use In Jupyter
 
-Inside a notebook, prefer `%pip` so the package is installed into the kernel's
-active Python environment:
+Inside notebooks, prefer `%pip` so the package installs into the active kernel:
 
 ```python
-%pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@main"
+%pip install vse-sim
 ```
 
-Then import from `vse_sim`:
+For reproducible notebooks:
+
+```python
+%pip install "vse-sim==0.1.0"
+```
+
+Restart the kernel after installing or upgrading if the notebook already
+imported an older copy.
+
+## Basic Notebook Example
 
 ```python
 from debugDump import setDebug
@@ -55,38 +61,74 @@ csvs = CsvBatch(
 len(csvs.rows)
 ```
 
-Save CSV output when you want a file in the notebook working directory:
+Save CSV output in the notebook working directory:
 
 ```python
-csvs.saveFile("notebookResults")
+csvs.saveFile("notebook-results")
 ```
 
-Legacy imports are still supported:
+## Python Script Example
+
+```python
+from debugDump import setDebug
+from vse_sim import CsvBatch, Mav, PolyaModel, Score, baseRuns, medianRuns
+
+
+def main() -> None:
+    setDebug(False)
+    csvs = CsvBatch(
+        PolyaModel(),
+        [[Score(), baseRuns], [Mav(), medianRuns]],
+        nvot=5,
+        ncand=4,
+        niter=3,
+        seed="script-demo",
+    )
+    csvs.saveFile("script-results")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+## Legacy Imports
+
+Older code can keep using the original module names:
 
 ```python
 from vse import CsvBatch
 from voterModels import PolyaModel
 ```
 
-If a notebook already imported an older version, restart the kernel after
-installing or upgrading before rerunning imports.
+Prefer `vse_sim` for new notebooks and scripts so future package cleanup can be
+introduced behind a stable import namespace.
 
-## Future PyPI Install
+## Install From GitHub
 
-Once the `vse-sim` project is published to PyPI, installation should become:
+Use GitHub installs when you need unreleased changes:
 
 ```shell
-python -m pip install vse-sim
+python -m pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@main"
 ```
 
-In notebooks:
+Install a specific branch, tag, or commit by replacing `main`:
 
-```python
-%pip install vse-sim
+```shell
+python -m pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@v0.1.0"
+python -m pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@<branch-name>"
+python -m pip install "vse-sim @ git+https://github.com/wclark/vse-sim.git@<commit-sha>"
 ```
 
-For reproducible notebooks, pin a version after public releases exist:
+## Local Development Install
 
-```python
-%pip install "vse-sim==0.1.0"
+From a repository checkout:
+
+```shell
+python -m pip install -e ".[dev,publish]"
+```
+
+Run the local quality gate:
+
+```shell
+nox
 ```

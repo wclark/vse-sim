@@ -3,6 +3,10 @@ title: Voter Satisfaction Efficiency (VSE) FAQ
 layout: default
 ---
 
+> Python package note: the simulator is now published as `vse-sim` on PyPI.
+> Install it with `python -m pip install vse-sim` or `%pip install vse-sim`
+> in Jupyter. See [installation and notebook usage](./INSTALL.md) for examples.
+
 ## This document looks long. Is there a shorter version?
 
 See [here](./VSEbasic).
