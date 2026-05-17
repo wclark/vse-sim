@@ -97,7 +97,8 @@ class CsvBatch:
         for n in range(4):
             keys.extend([f"tallyName{str(n)}", f"tallyVal{str(n)}"])
         keys = uniquify(keys)
-        with open(baseName + str(i) + ".csv", "w") as myFile:
+        path = baseName + str(i) + ".csv"
+        with open(path, "w") as myFile:
             print(
                 f"# {dict(media=self.media.__name__, version=self.repo_version, seed=self.seed, model=self.model, methods=self.methods, nvot=self.nvot, ncand=self.ncand, niter=self.niter)}",
                 file=myFile,
@@ -107,18 +108,39 @@ class CsvBatch:
             dw.writeheader()
             for r in self.rows:
                 dw.writerow(r)
+        return path
 
-    def to_dataframe(self):
+    @property
+    def results(self):
+        """Return this batch as a pandas-backed ``VseResults`` object."""
+        from .dataframe import VseResults
+
+        return VseResults.from_rows(self.rows)
+
+    @property
+    def dataframe(self):
         """Return this batch's rows as a pandas DataFrame."""
-        from .dataframe import rows_to_dataframe
+        return self.to_dataframe()
 
-        return rows_to_dataframe(self.rows)
+    def to_dataframe(self, copy=True):
+        """Return this batch's rows as a pandas DataFrame."""
+        return self.results.to_dataframe(copy=copy)
 
-    def summarize(self, group_by=("method", "chooser")):
+    def summarize(self, group_by=("method", "chooser"), sort_by="mean_vse", ascending=False):
         """Return a pandas DataFrame summarizing VSE scores for this batch."""
-        from .dataframe import summarize_vse
+        return self.results.summarize(
+            group_by=group_by,
+            sort_by=sort_by,
+            ascending=ascending,
+        )
 
-        return summarize_vse(self.rows, group_by=group_by)
+    def report(self, group_by=("method", "chooser")):
+        """Return common pandas report tables for this batch."""
+        return self.results.report(group_by=group_by)
+
+    def plot_vse(self, *args, **kwargs):
+        """Plot summarized VSE scores for this batch."""
+        return self.results.plot_vse(*args, **kwargs)
 
 
 medianRuns = [
@@ -176,12 +198,40 @@ markMethods = [
     [Plurality(), baseRuns],
 ]
 
+
+def run_simulation(
+    model,
+    methods,
+    nvot,
+    ncand,
+    niter,
+    baseName=None,
+    media=truth,
+    seed=None,
+    force=False,
+):
+    """Run a simulation and return a pandas-backed ``VseResults`` object."""
+    batch = CsvBatch(
+        model,
+        methods,
+        nvot=nvot,
+        ncand=ncand,
+        niter=niter,
+        baseName=baseName,
+        media=media,
+        seed=seed,
+        force=force,
+    )
+    return batch.results
+
+
 __all__ = [
     "CsvBatch",
     "allSystems",
     "baseRuns",
     "markMethods",
     "medianRuns",
+    "run_simulation",
     "uniquify",
 ]
 

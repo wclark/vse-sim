@@ -19,7 +19,7 @@ environment as the active kernel.
 Pin a release when you need reproducible notebooks:
 
 ```python
-%pip install "vse-sim==0.1.0"
+%pip install "vse-sim==0.1.1"
 ```
 
 Restart the kernel after installing or upgrading if you already imported
@@ -63,6 +63,7 @@ from vse_sim import (
     Srv,
     V321,
     Voter,
+    VseResults,
     allSystems,
     baseRuns,
     beHon,
@@ -74,6 +75,7 @@ from vse_sim import (
     markMethods,
     medianRuns,
     orderOf,
+    read_results_csv,
     rows_to_dataframe,
     skewedMediaFor,
     summarize_vse,
@@ -172,15 +174,92 @@ model_frame.pivot_table(
 )
 ```
 
-`CsvBatch` computes VSE using the spread between the best candidate and a random
-winner baseline. Perfectly symmetric tiny electorates can make that denominator
-zero, so use `ReverseModel` and small deterministic electorates for direct model
-inspection, or add quality/noise before running VSE batches.
+VSE uses the spread between the best candidate and a random winner baseline.
+Perfectly symmetric tiny electorates can make that denominator zero, so use
+`ReverseModel` and small deterministic electorates for direct model inspection,
+or add quality/noise before running VSE batches.
 
 ## Quick VSE Batch
 
-`CsvBatch` is the main simulation harness. It repeatedly generates electorates,
-runs the requested voting methods, and stores result rows.
+`vse.run_simulation(...)` is the DataFrame-first entry point. It repeatedly
+generates electorates, runs the requested voting methods, and returns a
+`VseResults` object.
+
+```python
+quick_results = vse.run_simulation(
+    PolyaModel(),
+    [[Score(), baseRuns], [Mav(), medianRuns]],
+    nvot=5,
+    ncand=4,
+    niter=3,
+    seed="notebook-quickstart",
+)
+
+quick_results.frame.head()
+```
+
+`VseResults.summarize()` returns a DataFrame grouped by method and chooser.
+
+```python
+quick_summary = quick_results.summarize()
+quick_summary.sort_values("mean_vse", ascending=False).head(10)
+```
+
+You can group at a different level when you want a compact comparison.
+
+```python
+quick_results.summarize(group_by="method")
+```
+
+Use `leaderboard`, `pivot`, and `report` for common notebook report tables.
+
+```python
+quick_results.leaderboard(n=5, group_by="method")
+```
+
+```python
+quick_results.pivot(index="method", columns="chooser")
+```
+
+```python
+quick_report = quick_results.report()
+quick_report.keys()
+```
+
+The same summary helper also works with plain row dictionaries or existing
+DataFrames.
+
+```python
+summarize_vse(quick_results.frame, group_by="method")
+```
+
+```python
+rows_to_dataframe(quick_results).head()
+```
+
+Plots are built from the same summary tables and return matplotlib axes.
+
+```python
+quick_results.plot_vse(group_by="method", kind="barh", title="Quick VSE comparison")
+```
+
+## Save And Reopen CSV Output
+
+`VseResults.to_csv(...)` writes the result DataFrame, and
+`read_results_csv(...)` loads it back into a `VseResults` object.
+
+```python
+with TemporaryDirectory() as tmpdir:
+    saved_path = Path(tmpdir) / "notebook-results.csv"
+    quick_results.to_csv(saved_path)
+
+    saved_results = read_results_csv(saved_path)
+
+saved_results.frame.head()
+```
+
+`CsvBatch` is still available when you want the legacy object or its metadata
+CSV writer.
 
 ```python
 quick_batch = CsvBatch(
@@ -192,48 +271,8 @@ quick_batch = CsvBatch(
     seed="notebook-quickstart",
 )
 
-quick_results = quick_batch.to_dataframe()
-quick_results.head()
-```
-
-`CsvBatch.summarize()` returns a DataFrame grouped by method and chooser.
-
-```python
-quick_summary = quick_batch.summarize()
-quick_summary.sort_values("mean_vse", ascending=False).head(10)
-```
-
-You can group at a different level when you want a compact comparison.
-
-```python
-quick_batch.summarize(group_by="method")
-```
-
-The same summary helper also works with plain row dictionaries or existing
-DataFrames.
-
-```python
-summarize_vse(quick_batch.rows, group_by="method")
-```
-
-```python
-summarize_vse(quick_results, group_by=("method", "chooser")).head()
-```
-
-## Save And Reopen CSV Output
-
-`saveFile` writes a metadata comment and a CSV table. Pandas can skip the
-metadata line with `comment="#"`.
-
-```python
 with TemporaryDirectory() as tmpdir:
-    output_base = Path(tmpdir) / "notebook-results"
-    quick_batch.saveFile(str(output_base))
-    saved_path = sorted(Path(tmpdir).glob("notebook-results*.csv"))[0]
-
-    saved_results = pd.read_csv(saved_path, comment="#")
-
-saved_results.head()
+    legacy_metadata_csv = quick_batch.saveFile(str(Path(tmpdir) / "notebook-results"))
 ```
 
 ## Run Every Bundled Voting Method
@@ -242,7 +281,7 @@ saved_results.head()
 method once with a tiny electorate.
 
 ```python
-all_method_batch = CsvBatch(
+all_method_results = vse.run_simulation(
     RandomModel(),
     allSystems,
     nvot=6,
@@ -251,8 +290,7 @@ all_method_batch = CsvBatch(
     seed="all-methods",
 )
 
-all_method_results = all_method_batch.to_dataframe()
-all_method_summary = all_method_batch.summarize(group_by="method")
+all_method_summary = all_method_results.summarize(group_by="method")
 
 all_method_summary.sort_values("mean_vse", ascending=False)
 ```
@@ -279,8 +317,8 @@ pd.DataFrame(
 
 ## Direct Method Experiments
 
-For most notebook work, use `CsvBatch`. When you want to inspect ballots and raw
-method scores, call a method's honest ballot factory directly.
+For most notebook work, use `vse.run_simulation(...)`. When you want to inspect
+ballots and raw method scores, call a method's honest ballot factory directly.
 
 ```python
 def honest_ballots(method, voters):
@@ -374,7 +412,7 @@ custom_runs = [
     [Mav(), [LazyChooser(), ProbChooser([(0.5, beX), (0.5, beHon)])]],
 ]
 
-strategy_batch = CsvBatch(
+strategy_results = vse.run_simulation(
     RandomModel(),
     custom_runs,
     nvot=6,
@@ -384,21 +422,20 @@ strategy_batch = CsvBatch(
     seed="strategy-media",
 )
 
-strategy_results = strategy_batch.to_dataframe()
-strategy_results[["method", "chooser", "vse"]].head(12)
+strategy_results.frame[["method", "chooser", "vse"]].head(12)
 ```
 
 ```python
-strategy_batch.summarize().sort_values(["method", "mean_vse"], ascending=[True, False])
+strategy_results.summarize().sort_values(["method", "mean_vse"], ascending=[True, False])
 ```
 
 Tally columns are present only when a chooser records tally information, so
 reshape them after filtering for rows that have a tally.
 
 ```python
-tally_columns = [column for column in strategy_results.columns if column.startswith("tally")]
+tally_columns = [column for column in strategy_results.frame.columns if column.startswith("tally")]
 
-strategy_results.dropna(subset=["tallyName0"])[
+strategy_results.frame.dropna(subset=["tallyName0"])[
     ["method", "chooser", *tally_columns]
 ].head()
 ```
@@ -437,7 +474,7 @@ pd.DataFrame(
 )
 ```
 
-Media helpers can be passed directly to `CsvBatch`.
+Media helpers can be passed directly to `vse.run_simulation(...)`.
 
 ```python
 media_batches = []
@@ -449,7 +486,7 @@ for label, media in [
     ("biased", biasedMediaFor(1, numerator=1)),
     ("skewed", skewedMediaFor(1)),
 ]:
-    batch = CsvBatch(
+    results = vse.run_simulation(
         RandomModel(),
         [[Score(), baseRuns]],
         nvot=6,
@@ -458,7 +495,7 @@ for label, media in [
         media=media,
         seed=f"media-{label}",
     )
-    media_batches.append(batch.summarize(group_by="method").assign(media=label))
+    media_batches.append(results.summarize(group_by="method").assign(media=label))
 
 pd.concat(media_batches, ignore_index=True)[
     ["media", "method", "rows", "mean_vse", "min_vse", "max_vse"]
@@ -486,7 +523,7 @@ batch_matrix = [
 matrix_summaries = []
 
 for label, model, methods in batch_matrix:
-    batch = CsvBatch(
+    results = vse.run_simulation(
         model,
         methods,
         nvot=6,
@@ -494,7 +531,7 @@ for label, model, methods in batch_matrix:
         niter=2,
         seed=f"matrix-{label}",
     )
-    matrix_summaries.append(batch.summarize(group_by="method").assign(model=label))
+    matrix_summaries.append(results.summarize(group_by="method").assign(model=label))
 
 batch_matrix_summary = pd.concat(matrix_summaries, ignore_index=True)
 batch_matrix_summary[["model", "method", "rows", "mean_vse"]].sort_values(
