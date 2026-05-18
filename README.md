@@ -27,7 +27,7 @@ In a notebook, use `%pip` so the package is installed into the active kernel:
 For reproducible notebooks or environments, pin a released version:
 
 ```shell
-python -m pip install "vse-sim==0.1.4"
+python -m pip install "vse-sim==0.1.5"
 ```
 
 To install the latest code from GitHub instead of PyPI:
@@ -120,6 +120,13 @@ from voterModels import PolyaModel
 See [Installation and notebook usage](docs/INSTALL.md) for environment setup,
 including GitHub installs and notebook workflow notes.
 
+## Documentation
+
+- [Installation and notebook usage](docs/INSTALL.md)
+- [Jupyter notebook template](docs/JUPYTER_EXAMPLES.md)
+- [Generated API reference](docs/api/vse_sim.html)
+- [Release process](docs/PUBLISHING.md)
+
 ## Development
 
 Create or activate a Python 3.10+ environment, then install the project in
@@ -157,6 +164,7 @@ Useful direct commands:
 python -m pytest --doctest-modules --cov=. --cov-fail-under=100
 python -m ruff format --check .
 python -m ruff check .
+python tools/build_api_docs.py --check
 python -m build
 python -m twine check dist/*
 check-wheel-contents dist/*.whl
@@ -166,12 +174,21 @@ python -m pip_audit --skip-editable --progress-spinner off .
 Coverage reports are written to `htmlcov/`, `coverage.xml`, and
 `pytest-results.xml` when the full coverage command is run.
 
+The API reference is generated from package docstrings with pdoc. Rebuild it
+with:
+
+```shell
+python tools/build_api_docs.py
+```
+
 ## Repository Layout
 
 - `vse_sim/`: modern package facade for new imports.
 - Root Python modules: legacy-compatible modules that remain importable.
 - `test/`: coverage and compatibility tests.
+- `tools/`: maintainer utilities such as API documentation generation.
 - `data/`: retained legacy/reference data artifacts.
-- `docs/`: GitHub Pages content plus install and release notes.
+- `docs/`: GitHub Pages content, generated API docs, install notes, and
+  release notes.
 
 See [Release process](docs/PUBLISHING.md) for the PyPI publishing workflow.

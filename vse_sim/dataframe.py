@@ -55,9 +55,7 @@ def to_dataframe(data, copy=True, **kwargs) -> pd.DataFrame:
     return pd.DataFrame(data, **kwargs)
 
 
-def rows_to_dataframe(
-    rows: Iterable[dict] | pd.DataFrame | "VseResults", copy=True
-) -> pd.DataFrame:
+def rows_to_dataframe(rows: Iterable[dict] | pd.DataFrame | VseResults, copy=True) -> pd.DataFrame:
     """Convert simulation rows, a DataFrame, or ``VseResults`` to a DataFrame."""
     return to_dataframe(rows, copy=copy)
 
@@ -208,7 +206,7 @@ def scores_to_dataframe(
 
 
 def summarize_vse(
-    rows: Iterable[dict] | pd.DataFrame | "VseResults",
+    rows: Iterable[dict] | pd.DataFrame | VseResults,
     group_by=DEFAULT_GROUP_BY,
     sort_by="mean_vse",
     ascending=False,
@@ -237,7 +235,7 @@ class VseResults:
     frame: pd.DataFrame
 
     @classmethod
-    def from_rows(cls, rows: Iterable[dict] | pd.DataFrame | "VseResults") -> "VseResults":
+    def from_rows(cls, rows: Iterable[dict] | pd.DataFrame | VseResults) -> "VseResults":
         return cls(to_dataframe(rows))
 
     @classmethod
@@ -245,9 +243,7 @@ class VseResults:
         return cls(pd.read_csv(Path(path), comment="#"))
 
     @classmethod
-    def concat(
-        cls, results: Iterable["VseResults" | pd.DataFrame | Iterable[dict]]
-    ) -> "VseResults":
+    def concat(cls, results: Iterable[VseResults | pd.DataFrame | Iterable[dict]]) -> "VseResults":
         frames = [rows_to_dataframe(result) for result in results]
         return cls(pd.concat(frames, ignore_index=True))
 

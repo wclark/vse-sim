@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vse-sim"
-version = "0.1.4"
+version = "0.1.5"
 description = "Voter Satisfaction Efficiency simulation tools for voting systems."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -45,10 +45,14 @@ audit = [
 build-check = [
     "check-wheel-contents",
 ]
+docs = [
+    "pdoc>=16",
+]
 dev = [
     "build",
     "check-wheel-contents",
     "nox",
+    "pdoc>=16",
     "pip-audit",
     "pre-commit",
     "pytest",
@@ -65,7 +69,8 @@ publish = [
 
 [project.urls]
 Homepage = "https://github.com/wclark/vse-sim"
-Documentation = "https://github.com/wclark/vse-sim/blob/main/docs/INSTALL.md"
+Documentation = "https://wclark.github.io/vse-sim/"
+API = "https://wclark.github.io/vse-sim/api/vse_sim.html"
 FAQ = "https://electionscience.github.io/vse-sim/"
 Issues = "https://github.com/wclark/vse-sim/issues"
 Repository = "https://github.com/wclark/vse-sim"

@@ -1,5 +1,8 @@
 include README.md
 include docs/INSTALL.md
+include docs/API.md
 include docs/JUPYTER_EXAMPLES.md
 include docs/PUBLISHING.md
+recursive-include docs/api *.html *.js
 include LICENSE
+include tools/build_api_docs.py

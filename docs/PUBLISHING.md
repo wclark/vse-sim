@@ -7,7 +7,7 @@ PyPI API token is stored in the repository.
 
 - Distribution name: `vse-sim`
 - Import namespace: `vse_sim`
-- Current package version: `0.1.4`
+- Current package version: `0.1.5`
 - PyPI: <https://pypi.org/project/vse-sim/>
 - GitHub releases: <https://github.com/wclark/vse-sim/releases>
 - Publish workflow: `.github/workflows/python-publish.yml`
@@ -20,26 +20,33 @@ PyPI API token is stored in the repository.
    - `pyproject.toml`
    - `vse_sim/__init__.py`
 3. Update release notes or documentation that mention the current version.
-4. Run the full local validation gate:
+4. Rebuild generated API docs:
+
+   ```shell
+   python -m pip install -e ".[docs]"
+   python tools/build_api_docs.py
+   ```
+
+5. Run the full local validation gate:
 
    ```shell
    python -m pip install -e ".[dev,publish]"
    nox
    ```
 
-5. Run additional interpreter coverage when available:
+6. Run additional interpreter coverage when available:
 
    ```shell
    nox -s tests-3.12
    ```
 
-6. Confirm the package builds and installs cleanly from the generated wheel if
+7. Confirm the package builds and installs cleanly from the generated wheel if
    the release changes packaging behavior.
 
 ## Publishing
 
 Publish by creating a GitHub release whose tag matches the package version with
-a leading `v`, for example `v0.1.4`.
+a leading `v`, for example `v0.1.5`.
 
 The release workflow runs when a GitHub release is published. It:
 
@@ -62,7 +69,7 @@ Run a clean install smoke test:
 ```shell
 python -m venv .package-smoke
 .package-smoke/Scripts/python -m pip install --upgrade pip
-.package-smoke/Scripts/python -m pip install "vse-sim==0.1.4"
+.package-smoke/Scripts/python -m pip install "vse-sim==0.1.5"
 .package-smoke/Scripts/python -m pip check
 ```
 
