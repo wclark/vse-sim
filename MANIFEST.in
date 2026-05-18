@@ -3,6 +3,6 @@ include docs/INSTALL.md
 include docs/API.md
 include docs/JUPYTER_EXAMPLES.md
 include docs/PUBLISHING.md
-recursive-include docs/api *.html *.js
+recursive-include docs/api *.html
 include LICENSE
 include tools/build_api_docs.py
